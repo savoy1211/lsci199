@@ -1,5 +1,6 @@
 from h_wordorder import *
 
+nltk.download("punkt") # This gives us access to nltk.tokenize.word_tokenize
 url_prefix = "http://www.socsci.uci.edu/~rfutrell/teaching/lsci109-w2020/data/"
 pride_and_prejudice = download_gutenberg_text(url_prefix + "1342-0.txt")
 # two_cities = download_gutenberg_text(url_prefix + "98-0.txt")
