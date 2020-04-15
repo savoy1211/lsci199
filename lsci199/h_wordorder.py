@@ -16,9 +16,6 @@ def download_gutenberg_text(url):
   """ Download a text file from a Project Gutenberg URL and return it as a string. """
   return requests.get(url).content.decode('utf-8')[1:] # Remove the weird initial character
 
-
-UNK = "<!!!!UNK!!!!>"
-
 def make_embedding_index(tokens):
   index = {}
   max_index = 0
@@ -26,7 +23,7 @@ def make_embedding_index(tokens):
     if token not in index:
       index[token] = max_index
       max_index += 1
-  index[UNK] = max_index
+  index["<!!!!UNK!!!!>"] = max_index
   return index
 
 def embed(tokens, index):
@@ -35,7 +32,7 @@ def embed(tokens, index):
     if token in index:
       a[index[token]] += 1
     else:
-      a[index[UNK]] += 1
+      a[index["<!!!!UNK!!!!>"]] += 1
   return a
 
 def make_embedding(tokens):
@@ -122,7 +119,6 @@ def get_h_words(text):
       'word': reversed_index,
       text: embed(preprocess(text), big_index),
   })
-  print(df[text])
   return plog_words(df[text], big_index, alpha=1)
 
 def get_h_wordset(text,n,p):
@@ -152,10 +148,3 @@ def get_h_wordorder(text, ngram_n=2, p_window=3):
   print("H(word order | word set): " + str(h_wordorder))
   return h_wordorder
 
-url_prefix = "http://www.socsci.uci.edu/~rfutrell/teaching/lsci109-w2020/data/"
-pride_and_prejudice = download_gutenberg_text(url_prefix + "1342-0.txt")
-# two_cities = download_gutenberg_text(url_prefix + "98-0.txt")
-# moby_dick = download_gutenberg_text(url_prefix + "2701-0.txt")
-# hard_times = download_gutenberg_text(url_prefix + "786-0.txt")
-
-get_h_wordorder(pride_and_prejudice)
