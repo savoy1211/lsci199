@@ -10,8 +10,6 @@ from collections import Counter
 import itertools
 import time
 
-# nltk.download("punkt") # This gives us access to nltk.tokenize.word_tokenize
-
 def download_gutenberg_text(url):
   """ Download a text file from a Project Gutenberg URL and return it as a string. """
   return requests.get(url).content.decode('utf-8')[1:] # Remove the weird initial character
