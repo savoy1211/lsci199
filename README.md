@@ -7,5 +7,5 @@ How much information is conveyed by words and the order of words across language
 To get the information embedded in the word order of Jane Austen's _Pride and Prejudice_, run: 
 
 ```sh
-python3 h_wordorder.py
+python3 main.py
 ```
