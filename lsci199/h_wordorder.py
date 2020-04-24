@@ -111,4 +111,7 @@ def survey_text(model, tokens, window_size):
     H_word_sets = np.mean(logps_word_sets)
     return H_words, H_word_sets
 
-test_additive_smoothing_ngram_model()
+if __name__ == '__main__':
+    import nose
+    nose.runmodule()
+
