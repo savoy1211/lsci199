@@ -68,11 +68,10 @@ def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
     ngrams = model.ngrams(tokens, model.n)
     prefix = model.ngrams(tokens, model.n -1)
-    logp_words = []
-    logp_words.append(model.prefix_logprobs[prefix[0]])
+    logp_words = model.prefix_logprobs[prefix[0]]
     for i in range(len(tokens)-1):
       try:
-          logp_words.append(model.ngram_logprobs[ngrams[i]] - model.prefix_logprobs[prefix[i]])
+          logp_words += model.ngram_logprobs[ngrams[i]] - model.prefix_logprobs[prefix[i]]
       except IndexError:
         pass
     return logp_words
@@ -98,13 +97,13 @@ def H_word_sets(model, set_of_sequences):
 
 def survey_text(model, tokens, window_size):
     # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
-    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle') 
-    text = " ".join([token.casefold() for token in nltk.tokenize.word_tokenize(model.text)])
-    b_sents = sent_detector.tokenize(text.strip(), realign_boundaries=False)
     windows = []
-    for window in b_sents:
-      if len(window.split()[:window_size]) == window_size: 
-        windows.append(window.split()[:window_size])
+    for token in tokens:
+      window = []
+      if len(tokens[:window_size]) == window_size: 
+        window = tokens[:window_size]
+        windows.append(window)
+        tokens = tokens[window_size-(window_size-1):]
     logps_words = np.array([logp_words(model, window) for window in windows])
     logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
     H_words = np.mean(logps_words)

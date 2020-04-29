@@ -13,5 +13,3 @@ pride_and_prejudice = download_gutenberg_text(url_prefix + "1342-0.txt")
 text = pride_and_prejudice 
 model = AdditiveSmoothingNGramModel(text, n=2)
 print(survey_text(model, model.tokens, 3))
-# tuple_ = ('The', 'Project', 'Gutenberg') 
-# print(model.logprob(model, tuple_))
