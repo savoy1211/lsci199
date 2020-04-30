@@ -19,6 +19,7 @@ class AdditiveSmoothingNGramModel:
         self.ngram_logprobs = self.logprob(self.tokens)
 
     def logprob(self, tokens):
+      # p(w1, w2, ..., wn) = product from t=1 to t=n of p(w_t | w_{t - (n-1)} ..., w_{t - 1})
       n = self.n
       INF = float('inf')
       ngrams = Counter(self.ngrams(tokens, n))
@@ -81,7 +82,7 @@ def logp_word_set(model, tokens):
     logprobs = []
     for reordered_tokens in itertools.permutations(tokens):
       try:
-        logprobs.append(model.ngram_logprobs[tuple(reordered_tokens)])
+        logprobs.append(logp_words(model, reordered_tokens))
       except KeyError:
         logprobs.append(0)
     return scipy.special.logsumexp(logprobs)
@@ -103,7 +104,7 @@ def survey_text(model, tokens, window_size):
       if len(tokens[:window_size]) == window_size: 
         window = tokens[:window_size]
         windows.append(window)
-        tokens = tokens[window_size-(window_size-1):]
+        tokens = tokens[1:]
     logps_words = np.array([logp_words(model, window) for window in windows])
     logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
     H_words = np.mean(logps_words)
