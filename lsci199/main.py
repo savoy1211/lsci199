@@ -10,6 +10,6 @@ pride_and_prejudice = download_gutenberg_text(url_prefix + "1342-0.txt")
 # two_cities = download_gutenberg_text(url_prefix + "98-0.txt")
 # moby_dick = download_gutenberg_text(url_prefix + "2701-0.txt")
 # hard_times = download_gutenberg_text(url_prefix + "786-0.txt")
-text = pride_and_prejudice 
+text = pride_and_prejudice
 model = AdditiveSmoothingNGramModel(text, n=2)
 print(survey_text(model, model.tokens, 3))
