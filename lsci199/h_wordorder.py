@@ -162,7 +162,7 @@ def survey_text(model, tokens, window_size):
     logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
     H_words = np.mean(logps_words)
     H_word_sets = np.mean(logps_word_sets)
-    return H_words, H_word_sets
+    return ("H_words", H_words, "H_word_sets", H_word_sets)
 
 if __name__ == '__main__':
     import nose
