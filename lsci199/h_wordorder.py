@@ -9,6 +9,7 @@ import nltk
 import math
 from collections import Counter
 import itertools
+nf = -float("inf")
 
 class AdditiveSmoothingNGramModel:
     def __init__(self, text, alpha=1, n=2):
@@ -22,6 +23,8 @@ class AdditiveSmoothingNGramModel:
       # p(w1, w2, ..., wn) = product from t=1 to t=n of p(w_t | w_{t - (n-1)} ..., w_{t - 1})
       ngrams = Counter(self.ngrams(tokens,self.n))
       logZ_ngrams = math.log(sum(ngrams.values()), 2.0)
+      # logZ_ngrams = 0
+
       ngram_probs = {gram: -1*(math.log(value, 2.0) - logZ_ngrams) for gram, value in ngrams.items()}
       
       prefix = Counter(self.ngrams(tokens, self.n-1))
@@ -30,7 +33,7 @@ class AdditiveSmoothingNGramModel:
 
       return ngram_probs, prefix_probs
 
-    def total_prob(self, tokens, logp_word_set=False):
+    def total_prob(self, tokens):
       ngrams = self.ngrams(tokens, self.n)
       prefix = self.ngrams(tokens, self.n-1)
       logp_words = 0
@@ -38,10 +41,7 @@ class AdditiveSmoothingNGramModel:
         try:
           logp_words = self.prefix_logprobs[prefix[0]]
         except Exception:
-          if logp_word_set is True:
-            return 0
-          else:
-            pass
+            return nf
       elif len(tokens) > 1:
         for i in range(0, len(tokens)-1):
             try:
@@ -50,10 +50,7 @@ class AdditiveSmoothingNGramModel:
               else:
                 logp_words = self.ngram_logprobs[ngrams[i]]
             except Exception:
-              if logp_word_set is True:
-                return 0
-              else:
-                pass
+              return nf
       return logp_words
 
     def ngrams(self, text, n):
@@ -67,47 +64,58 @@ def test_total_logprobs():
     # Test 1
     text = "foo bar foo bar foo"
     model = AdditiveSmoothingNGramModel(text)
-    model_prob = model.total_prob(model.tokens)
+    model_prob = logp_words(model,model.tokens)
     actual_prob = -math.log(3/5,2.0) + (-math.log(2/4,2.0) + math.log(3/5,2.0)) + (-math.log(2/4,2.0) + math.log(2/5,2.0)) + (-math.log(2/4,2.0) + math.log(3/5,2.0)) + (-math.log(2/4,2.0) + math.log(2/5,2.0))  
       # plog(foo) + plog((foo, bar) - foo) + plog((bar, foo) - bar) + plog((foo, bar) - foo) + plog((bar, foo) - bar) 
     assert round(model_prob, 12) == round(actual_prob, 12)
      
     # Test 2
     # text = "foo bar foo bar foo"
-    model_prob = model.total_prob(["foo","foo","bar"])
+    model_prob = logp_words(model,["foo","foo","bar"])
     actual_prob = (-math.log(2/4,2.0) + math.log(3/5,2.0)) # plog((foo, bar) - foo)
+    print("test2")
     print(model_prob, actual_prob)
-    assert round(model_prob, 12) == round(actual_prob, 12)
+    assert round(model_prob, 12) == 0
     
     # Test 3
     # text = "foo bar foo bar foo"
-    assert round(model.total_prob(["foo","foo"]), 12) == 0
+    assert round(logp_words(model,["foo","foo"]), 12) == 0
 
     # Test 4
     text = "In the beginning, was the word, and the word, was with God, and the word was God."
     model = AdditiveSmoothingNGramModel(text)
-    model_prob = model.total_prob(["the","word"])
+    model_prob = logp_words(model,["the","word"])
     actual_prob = -math.log(4/22,2.0) -math.log(3/21,2.0) + math.log(4/22,2.0) # plog(the) + plog((the, word) - the)
     assert round(model_prob, 12) == round(actual_prob, 12)
     
     # Test 5
     # text = "In the beginning, was the word, and the word, was with God, and the word was God."
-    assert model.total_prob(["word"]) == -math.log(3/22,2.0) # plog(word)
+    assert logp_words(model,["word"]) == -math.log(3/22,2.0) # plog(word)
     
     # Test 6
     # text = "In the beginning, was the word, and the word, was with God, and the word was God."
-    assert model.total_prob(["haberdashery"]) == 0
+    assert logp_words(model,["haberdashery"]) == 0
 
 def test_logp_word_set():
   # Test 1
   text = "1 2 3"
   model = AdditiveSmoothingNGramModel(text)
   h_word_sets_test = logp_word_set(model, ["1","2","3"])
-  assert h_word_sets_test == 0
+  h_word_sets_actual = scipy.special.logsumexp([
+    (-math.log(1/2,2.0) - math.log(1/2,2.0) + math.log(1/3,2.0)), # [1,2,3]
+    -float("inf"), # [1,3,2]
+    -float("inf"), # [2,1,3]
+    -float("inf"), # [2,3,1]
+    -float("inf"), # [3,1,2]
+    -float("inf"), # [3,2,1]
+  ])
+  print(h_word_sets_test, h_word_sets_actual)
+  assert round(h_word_sets_test, 12) == round(h_word_sets_actual, 12)
 
   # Test 2 
   # text = "1 2 3"
   h_word_sets_test = logp_word_set(model, ["1","2","4"])
+  print(h_word_sets_test, h_word_sets_actual)
   assert h_word_sets_test == 0
 
   # Test 3
@@ -127,17 +135,17 @@ def test_logp_word_set():
 
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
-    return model.total_prob(tokens)
+    total_prob = model.total_prob(tokens)
+    if total_prob == -float("INF"):
+      return 0
+    else:
+      return total_prob
 
 def logp_word_set(model, tokens): 
     """Get plog sum of each tokens' permutations"""
-    logprobs = []
-    for reordered_tokens in itertools.permutations(tokens):
-        logp_tokens = model.total_prob(reordered_tokens, logp_word_set=True)
-        if logp_tokens == 0:
-          return 0
-        else:
-          logprobs.append(logp_tokens)
+    logprobs = [model.total_prob(reordered_tokens) for reordered_tokens in itertools.permutations(tokens)]
+    while nf in logprobs: logprobs.remove(nf)
+    while len(logprobs) == 0: logprobs.append(0)
     return scipy.special.logsumexp(logprobs)
 
 def H_words(model, set_of_sequences):
@@ -162,7 +170,7 @@ def survey_text(model, tokens, window_size):
     logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
     H_words = np.mean(logps_words)
     H_word_sets = np.mean(logps_word_sets)
-    return ("H_words", H_words, "H_word_sets", H_word_sets)
+    return (H_words, H_word_sets)
 
 if __name__ == '__main__':
     import nose

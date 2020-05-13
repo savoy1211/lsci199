@@ -1,6 +1,0 @@
-Results using corpus containing Pride and Prejudice
-	window size 1 :  (H_words:  8.825180970521215,  H_word_sets:  8.825180970521215)
-	window size 2 :  (H_words: 14.067533200353317,  H_word_sets:  3.8835007021055903)
-	window size 3 :  (H_words: 19.309832396850812,  H_word_sets:  0.8312245134483824)
-	window size 4 :  (H_words: 24.552180439319656,  H_word_sets:  0.07259956825669223)
-	window size 5 :  (H_words: 29.794548208825073,  H_word_sets:  0.0031547268275357284)
