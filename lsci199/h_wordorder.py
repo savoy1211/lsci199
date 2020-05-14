@@ -41,7 +41,7 @@ class AdditiveSmoothingNGramModel:
         try:
           logp_words = self.prefix_logprobs[prefix[0]]
         except Exception:
-            return nf
+            return -nf
       elif len(tokens) > 1:
         for i in range(0, len(tokens)-1):
             try:
@@ -50,8 +50,8 @@ class AdditiveSmoothingNGramModel:
               else:
                 logp_words = self.ngram_logprobs[ngrams[i]]
             except Exception:
-              return nf
-      return logp_words
+              return -nf
+      return -logp_words
 
     def ngrams(self, text, n):
       """Get ngram counts for input"""
@@ -75,11 +75,11 @@ def test_total_logprobs():
     actual_prob = (-math.log(2/4,2.0) + math.log(3/5,2.0)) # plog((foo, bar) - foo)
     print("test2")
     print(model_prob, actual_prob)
-    assert round(model_prob, 12) == 0
+    assert round(model_prob, 12) == -INF
     
     # Test 3
     # text = "foo bar foo bar foo"
-    assert round(logp_words(model,["foo","foo"]), 12) == 0
+    assert round(logp_words(model,["foo","foo"]), 12) == -INF
 
     # Test 4
     text = "In the beginning, was the word, and the word, was with God, and the word was God."
@@ -94,7 +94,7 @@ def test_total_logprobs():
     
     # Test 6
     # text = "In the beginning, was the word, and the word, was with God, and the word was God."
-    assert logp_words(model,["haberdashery"]) == 0
+    assert logp_words(model,["haberdashery"]) == -INF
 
 def test_logp_word_set():
   # Test 1
@@ -116,7 +116,7 @@ def test_logp_word_set():
   # text = "1 2 3"
   h_word_sets_test = logp_word_set(model, ["1","2","4"])
   print(h_word_sets_test, h_word_sets_actual)
-  assert h_word_sets_test == 0
+  assert h_word_sets_test == -INF
 
   # Test 3
   text = "foo bar foo bar foo foo bar"
@@ -135,17 +135,13 @@ def test_logp_word_set():
 
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
-    total_prob = model.total_prob(tokens)
-    if total_prob == -float("INF"):
-      return 0
-    else:
-      return total_prob
+    return model.total_prob(tokens)
 
 def logp_word_set(model, tokens): 
     """Get plog sum of each tokens' permutations"""
     logprobs = [model.total_prob(reordered_tokens) for reordered_tokens in itertools.permutations(tokens)]
-    while nf in logprobs: logprobs.remove(nf)
-    while len(logprobs) == 0: logprobs.append(0)
+    if not logprobs:
+        logprobs = [0]
     return scipy.special.logsumexp(logprobs)
 
 def H_words(model, set_of_sequences):
