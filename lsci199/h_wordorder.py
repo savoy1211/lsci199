@@ -34,6 +34,8 @@ class AdditiveSmoothingNGramModel:
       return ngram_probs, prefix_probs
 
     def total_prob(self, tokens):
+
+      print(tokens)
       ngrams = self.ngrams(tokens, self.n)
       prefix = self.ngrams(tokens, self.n-1)
       logp_words = 0
@@ -41,7 +43,7 @@ class AdditiveSmoothingNGramModel:
         try:
           logp_words = self.prefix_logprobs[prefix[0]]
         except Exception:
-            return -nf
+            return nf
       elif len(tokens) > 1:
         for i in range(0, len(tokens)-1):
             try:
@@ -50,7 +52,7 @@ class AdditiveSmoothingNGramModel:
               else:
                 logp_words = self.ngram_logprobs[ngrams[i]]
             except Exception:
-              return -nf
+              return nf
       return -logp_words
 
     def ngrams(self, text, n):
@@ -67,6 +69,7 @@ def test_total_logprobs():
     model_prob = logp_words(model,model.tokens)
     actual_prob = -math.log(3/5,2.0) + (-math.log(2/4,2.0) + math.log(3/5,2.0)) + (-math.log(2/4,2.0) + math.log(2/5,2.0)) + (-math.log(2/4,2.0) + math.log(3/5,2.0)) + (-math.log(2/4,2.0) + math.log(2/5,2.0))  
       # plog(foo) + plog((foo, bar) - foo) + plog((bar, foo) - bar) + plog((foo, bar) - foo) + plog((bar, foo) - bar) 
+    print(model_prob, actual_prob)
     assert round(model_prob, 12) == round(actual_prob, 12)
      
     # Test 2
@@ -164,8 +167,8 @@ def survey_text(model, tokens, window_size):
         tokens = tokens[1:]
     logps_words = np.array([logp_words(model, window) for window in windows])
     logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
-    H_words = np.mean(logps_words)
-    H_word_sets = np.mean(logps_word_sets)
+    H_words = -np.mean(logps_words)
+    H_word_sets = -np.mean(logps_word_sets)
     return (H_words, H_word_sets)
 
 if __name__ == '__main__':
