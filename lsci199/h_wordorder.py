@@ -12,11 +12,8 @@ import itertools
 import torch
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import csv
-from functools import lru_cache
-
 
 n_inf = -float("inf")
-
 
 class AdditiveSmoothingNGramModel:
     def __init__(self, text, alpha=1, n=2, add_tags=True):
@@ -82,7 +79,6 @@ class GPT2Model:
     self.model = model
     self.tokenizer = tokenizer
 
-  @profile
   def total_prob(self, sentence, with_delimiters=True):
     if with_delimiters:
         sentence_tokens = [self.tokenizer.bos_token_id] + self.tokenizer.encode(sentence) + [self.tokenizer.eos_token_id]

@@ -36,7 +36,7 @@ def each_text(texts, text_names):
 	for i in range(len(texts)):
 		model = GPT2Model(model_, tokenizer, texts[i])
 		h_words, h_wordset = [], []
-		for j in range(1,3):
+		for j in range(1,6):
 			h_words_current, h_wordset_current = survey_text_gpt2(model, j)
 			print("h_words",h_words_current, "h_wordset", h_wordset_current)
 			h_words.append(h_words_current)
@@ -44,5 +44,7 @@ def each_text(texts, text_names):
 
 		d = { 'h_words': h_words, 'h_wordset': h_wordset}
 		df = pd.DataFrame(data=d, dtype=np.float64)
-		pd.DataFrame(df).to_csv("bigram_model_results_windows1to5_"+str(text_names[i]))
-		print("Done! Created bigram_model_results_windows1to5_"+str(text_names[i]))
+		pd.DataFrame(df).to_csv("gpt2_results_windows1to5_"+str(text_names[i]))
+		print("Done! Created gpt2_results_windows1to5_"+str(text_names[i]))
+
+each_text([pride_and_prejudice[:1000]],['pride_and_prejudice'])
