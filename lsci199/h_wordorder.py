@@ -9,7 +9,14 @@ import nltk
 import math
 from collections import Counter
 import itertools
+import torch
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
+import csv
+from functools import lru_cache
+
+
 n_inf = -float("inf")
+
 
 class AdditiveSmoothingNGramModel:
     def __init__(self, text, alpha=1, n=2, add_tags=True):
@@ -68,6 +75,44 @@ class AdditiveSmoothingNGramModel:
       """Get ngram counts for input"""
       return [tuple(text[i:i+n]) for i in range(len(text)-n+1) if text[i:i+n]]
 
+class GPT2Model:
+  def __init__(self, model, tokenizer, text):
+    self.text = text
+    self.window_size = 1
+    self.model = model
+    self.tokenizer = tokenizer
+
+  @profile
+  def total_prob(self, sentence, with_delimiters=True):
+    if with_delimiters:
+        sentence_tokens = [self.tokenizer.bos_token_id] + self.tokenizer.encode(sentence) + [self.tokenizer.eos_token_id]
+    else:
+        sentence_tokens = self.tokenizer.encode(sentence)
+    sentence_tensor = torch.tensor([sentence_tokens])
+    if torch.cuda.is_available():
+        sentence_tensor = sentence_tensor.to('cuda')
+        self.model.to('cuda')
+    with torch.no_grad():
+        predictions = self.model(sentence_tensor)
+        probabilities = torch.log_softmax(predictions[0], -1)
+        # print(probabilities[0].shape)
+        model_probs = probabilities[0, :, tuple(sentence_tokens)].diag(int(with_delimiters))
+        entropy = - (probabilities[0,:,:].exp() * probabilities[0,:,:]).sum(-1)[1:]
+
+    # entropy_reduction = []
+    # for idx, item in enumerate(entropy):
+    #     if idx < len(entropy) - 1:
+    #         entropy_reduction.append(entropy[idx].item() - entropy[idx + 1].item())
+
+    mProb = []
+    # mProb.append(('<BOS>', 0.0))
+    for token, prob in zip(sentence_tokens[1:], model_probs):
+        if self.tokenizer.decode(token) != '<|endoftext|>':
+            mProb.append((self.tokenizer.decode(token).strip(' '), prob.item()))
+    # mProb.append(('<EOS>', 0.0))
+
+    return mProb
+
 def test_wordorder():
   # window_size = 1
   h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, friend. My name is Ryan and I am from Los Angeles."), window_size=1)
@@ -108,11 +153,15 @@ def test_wordorder():
 
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
-    return model.total_prob(tokens)
+    result = model.total_prob(tokens)
+    # print(result)
+    entropy_array = [each[1] for each in result]
+    # entropy_array = [each[1] for each in result if (len(result) == model.window_size)]
+    return sum(entropy_array)
 
 def logp_word_set(model, tokens): 
     """Get plog sum of each tokens' permutations"""
-    logprobs = [model.total_prob(reordered_tokens) for reordered_tokens in itertools.permutations(tokens)]
+    logprobs = [logp_words(model, reordered_tokens) for reordered_tokens in itertools.permutations(tokens)]
     if not logprobs:
         logprobs = [0]
     return scipy.special.logsumexp(logprobs)
@@ -141,6 +190,26 @@ def survey_text(model, window_size):
           windows.append(window)
           sentence = sentence[1:]
 
+    logps_words = np.array([logp_words(model, window) for window in windows])
+    logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
+    H_words = -np.mean(logps_words)
+    H_word_sets = -np.mean(logps_word_sets)
+    return H_words, H_word_sets
+
+def survey_text_gpt2(model, window_size):
+    # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
+    windows = []
+    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+    sentences = sent_detector.tokenize(model.text.strip(), realign_boundaries=False)
+    for sentence in sentences:    
+      sentence = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
+      for token in sentence:
+        window = []
+        if len(sentence[:window_size]) == window_size: 
+          window = sentence[:window_size]
+          windows.append(window)
+          sentence = sentence[1:]
+    model.window_size = window_size
     logps_words = np.array([logp_words(model, window) for window in windows])
     logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
     H_words = -np.mean(logps_words)
