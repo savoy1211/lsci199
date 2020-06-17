@@ -151,9 +151,9 @@ def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
     result = model.total_prob(tokens)
     # print(result)
-    entropy_array = [each[1] for each in result]
+    # entropy_array = [each[1] for each in result]
     # entropy_array = [each[1] for each in result if (len(result) == model.window_size)]
-    return sum(entropy_array)
+    return result
 
 def logp_word_set(model, tokens): 
     """Get plog sum of each tokens' permutations"""
