@@ -48,6 +48,9 @@ class AdditiveSmoothingNGramModel:
       total_val = sum(prefix.values())
       prefix_probs = {gram: float(math.log((value/total_val),2.0)) for gram, value in prefix.items()}
 
+      # print('ngrams', ngram_probs)
+      # print('prefix', prefix_probs)
+
       return ngram_probs, prefix_probs
 
     def total_prob(self, tokens):
@@ -60,12 +63,13 @@ class AdditiveSmoothingNGramModel:
         except Exception:
             return n_inf
       elif len(tokens) > 1:
-        logp_words = self.prefix_logprobs[prefix[0]]
-        for i in range(len(tokens)-1):
-            try:
-              logp_words += self.ngram_logprobs[ngrams[i]] - self.prefix_logprobs[prefix[i]]
-            except Exception: 
-              return n_inf
+        try:
+          logp_words = self.prefix_logprobs[prefix[0]]
+          for i in range(len(tokens)-self.n+1):
+            logp_words += self.ngram_logprobs[ngrams[i]] - self.prefix_logprobs[prefix[i]]
+            # print(ngrams[i], '-', prefix[i])
+        except Exception:
+          return n_inf
       return logp_words
 
     def ngrams(self, text, n):
@@ -151,8 +155,6 @@ def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
     result = model.total_prob(tokens)
     # print(result)
-    # entropy_array = [each[1] for each in result]
-    # entropy_array = [each[1] for each in result if (len(result) == model.window_size)]
     return result
 
 def logp_word_set(model, tokens): 
