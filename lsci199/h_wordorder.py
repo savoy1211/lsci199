@@ -15,24 +15,36 @@ import csv
 
 n_inf = -float("inf")
 
+
+def download_gutenberg_text(url):
+  """ Download a text file from a Project Gutenberg URL and return it as a string. """
+  return requests.get(url).content.decode('utf-8')[1:] # Remove the weird initial character
+
+# nltk.download("punkt") # This gives us access to nltk.tokenize.word_tokenize
+url_prefix = "http://www.socsci.uci.edu/~rfutrell/teaching/lsci109-w2020/data/"
+pride_and_prejudice = download_gutenberg_text(url_prefix + "1342-0.txt")
+two_cities = download_gutenberg_text(url_prefix + "98-0.txt")
+moby_dick = download_gutenberg_text(url_prefix + "2701-0.txt")
+hard_times = download_gutenberg_text(url_prefix + "786-0.txt")
+
 class AdditiveSmoothingNGramModel:
     def __init__(self, text, alpha=1, n=2, add_tags=True):
         self.text = text
         self.alpha = alpha
         self.n = n
         self.add_tags = add_tags
-        self.tokens = self.tokens_init(text)
-        # self.tokens_tagless = [token.casefold() for token in nltk.tokenize.word_tokenize(text) if token.isalnum()]
+        self.tokens = self.tokens_init(text, self.n)
+        self.tokens_tagless = [token.casefold() for token in nltk.tokenize.word_tokenize(text) if token.isalnum()]
         self.ngram_logprobs, self.prefix_logprobs = self.logprob_init(self.tokens)
 
-    def tokens_init(self, text):
+    def tokens_init(self, text, n):
       if self.add_tags is True:
         tokens = []
         sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
         sentences = sent_detector.tokenize(text.strip(), realign_boundaries=False)
         for sentence in sentences:
           current_tokens = [token.casefold() for token in nltk.word_tokenize(sentence) if token.isalnum()]
-          current_tokens = (self.n-1)*["<<START>>"] + current_tokens + (self.n-1)*["<<END>>"]
+          current_tokens = (n-1)*["<<START>>"] + current_tokens + (n-1)*["<<END>>"]
           tokens += current_tokens
         return tokens
       else:
@@ -44,12 +56,17 @@ class AdditiveSmoothingNGramModel:
       total_val = sum(ngrams.values())
       ngram_probs = {gram: float(math.log((value/total_val),2.0)) for gram, value in ngrams.items()}
 
-      prefix = Counter(self.ngrams(tokens, self.n-1))
-      total_val = sum(prefix.values())
-      prefix_probs = {gram: float(math.log((value/total_val),2.0)) for gram, value in prefix.items()}
+      prefix_probs = {}
+      prefix_num = 1
+      while self.n-prefix_num > 0:
+        current_n = self.n - prefix_num
+        prefix = Counter(self.ngrams(self.tokens_init(self.text, current_n+1), current_n))
+        total_val = sum(prefix.values())
+        prefix_probs.update({gram: float(math.log((value/total_val),2.0)) for gram, value in prefix.items()})
+        prefix_num += 1
 
-      # print('ngrams', ngram_probs)
-      # print('prefix', prefix_probs)
+      print('ngrams', ngram_probs)
+      print('prefix', prefix_probs)
 
       return ngram_probs, prefix_probs
 
@@ -59,7 +76,7 @@ class AdditiveSmoothingNGramModel:
       logp_words = 0
       if len(tokens) == 1:
         try:
-          logp_words = self.prefix_logprobs[prefix[0]]
+          logp_words = self.prefix_logprobs[tuple(tokens)]
         except Exception:
             return n_inf
       elif len(tokens) > 1:
@@ -115,41 +132,49 @@ class GPT2Model:
 
 def test_wordorder():
   # window_size = 1
-  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, friend. My name is Ryan and I am from Los Angeles."), window_size=1)
+  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=1)
   tags_plog, words_plog = [math.log(2/16,2.0)]*4, [math.log(1/16,2.0)]*12
   h_words_actual = -np.mean(tags_plog + words_plog)
   print(h_words_test, h_words_actual)
   assert round(h_words_test, 12) == round(h_words_actual, 12)  
 
   # window_size = 2
-  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, friend. My name is Ryan and I am from Los Angeles."), window_size=2)
+  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=2)
   plog_array = [math.log(1/15,2.0)] * 15
   h_words_actual = -np.mean(plog_array)
-  print(h_words_test, h_words_actual)
   assert round(h_words_test, 12) == round(h_words_actual, 12)
 
   # window_size = 3
-  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, friend. My name is Ryan and I am from Los Angeles."), window_size=3)
+  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=3)
   plog_array = [2*math.log(1/15,2.0)-math.log(1/16,2.0)]*12
   h_words_actual = -np.mean(plog_array)
-  print(len(plog_array))
-  print(h_words_test, h_words_actual)
   assert round(h_words_test, 12) == round(h_words_actual, 12)
 
   # window_size = 4
-  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, friend. My name is Ryan and I am from Los Angeles."), window_size=4)
+  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=4)
   plog_array = [3*math.log(1/15,2.0)-2*math.log(1/16,2.0)]*10
   h_words_actual = -np.mean(plog_array)
-  print(len(plog_array))
-  print(h_words_test, h_words_actual)
   assert round(h_words_test, 12) == round(h_words_actual, 12)  
 
   # window_size = 2 (trigram)
-  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, friend. My name is Ryan and I am from Los Angeles.", n=3), window_size=2)
+  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles.", n=3), window_size=2)
   plog_array1, plog_array2 = [math.log(2/18,2.0)] * 4,  [math.log(1/18,2.0)] * 14
   h_words_actual = -np.mean(plog_array1+plog_array2)
   print(h_words_test, h_words_actual)
   assert round(h_words_test, 12) == round(h_words_actual, 12)
+
+  # window_size = 1 (trigram) 
+  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles.", n=3), window_size=1)
+  plog_array1, plog_array2 = [math.log(2/18,2.0)] * 4,  [math.log(1/18,2.0)] * 14
+  h_words_actual = -np.mean(plog_array1+plog_array2)
+  print(h_words_test, h_words_actual)
+  assert round(h_words_test, 12) == round(h_words_actual, 12)
+
+  model2 = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I amd from Los Angeles.", n=2)
+  model3 = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I amd from Los Angeles.", n=3)
+  model4 = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I amd from Los Angeles.", n=4)
+  assert logp_words(model2, ['ryan']) == logp_words(model3, ['ryan']) == logp_words(model4, ['ryan'])
+
 
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
@@ -187,7 +212,7 @@ def survey_text(model, window_size):
           window = sentence[:window_size]
           windows.append(window)
           sentence = sentence[1:]
-
+    print(windows)
     logps_words = np.array([logp_words(model, window) for window in windows])
     logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
     H_words = -np.mean(logps_words)
