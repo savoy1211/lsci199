@@ -15,6 +15,7 @@ import csv
 
 n_inf = -float("inf")
 
+
 def download_gutenberg_text(url):
   """ Download a text file from a Project Gutenberg URL and return it as a string. """
   return requests.get(url).content.decode('utf-8')[1:] # Remove the weird initial character
@@ -68,22 +69,60 @@ class AdditiveSmoothingNGramModel:
       ngrams = self.ngrams(tokens, self.n)
       prefix = self.ngrams(tokens, self.n-1)
       logp_words = 0
+      if len(tokens) == 1:
+        try:
+          logp_words = self.prefix_logprobs[tuple(tokens)]
+        except Exception:
+            return n_inf
+      elif len(tokens) > 1:
+        try:
+          logp_words = self.prefix_logprobs[tuple(tokens[:1+(self.n-2)])]
+          # print("init", tokens[:1+(self.n-2)])
+          for i in range(len(tokens)-self.n+1):
+            logp_words += self.ngram_logprobs[ngrams[i]] - self.prefix_logprobs[prefix[i]]
+            # print(ngrams[i], '-', prefix[i])
+        except Exception:
+          # print("EXCEPTION FOUND", tokens, tokens[:1+(self.n-2)])
+          # print(self.prefix_logprobs, self.ngram_logprobs)
+          return n_inf
+      return logp_words
+
+    def total_prob_2(self, tokens):
+      ngrams = self.ngrams(tokens, self.n)
+      prefix = self.ngrams(tokens, self.n-1)
+      print(tokens[:1])
+      print("prefix_probs",self.prefix_logprobs)
+      print(self.prefix_logprobs[tuple(tokens[:1])])
+      print("ngram_probs", self.ngram_logprobs)
+      logp_words = 0
+      print("tokens", tokens)
+      print("self.n", self.n)
+      print("len(tokens)", len(tokens))
+      logp_words += self.prefix_logprobs[tuple(tokens[:1])]
+
       try:
-        logp_words += self.prefix_logprobs[tuple(tokens[:1])]
         if self.n > len(tokens): # only use prefix_logprobs
+          print("greater than")
           for i in range(1,len(tokens)):
             logp_words += self.prefix_logprobs[tuple(tokens[:i+1])] - self.prefix_logprobs[tuple(tokens[:i])] 
+            print(tokens[:i+1], '-', tokens[:i])
         elif self.n <= len(tokens):
+          print("less than or equal")
           for i in range(1,self.n-1):
             logp_words += self.prefix_logprobs[tuple(tokens[:i+1])] - self.prefix_logprobs[tuple(tokens[:i])] 
+            print(tokens[:i+1], '-', tokens[:i])
           for i in range(len(tokens) - self.n+1):
             logp_words += self.ngram_logprobs[tuple(tokens[i:i+self.n])] - self.prefix_logprobs[tuple(tokens[i:i+self.n-1])]
+            print(tokens[i:i+self.n], '-', tokens[i:i+self.n-1])
       except Exception:
+        print("EXCEPTION FOUND", tokens)
         return n_inf
       return logp_words
 
     def ngrams(self, tokens, n):
       """Get ngram counts for input"""
+      # remove ngram if contains both <<BOS>> and <<EOS>>
+      # return [tuple(tokens[i:i+n]) for i in range(len(tokens)-n+1) if tokens[i:i+n] and '<<BOS>>' not in tuple(tokens[i:i+n]) or '<<EOS>>' not in tuple(tokens[i:i+n])]
       to_remove = []
       all_tuples = []
       for i in range(len(tokens)-n+1):
@@ -97,7 +136,14 @@ class AdditiveSmoothingNGramModel:
           all_tuples.remove(i)
         except ValueError:
           pass
+      # print()
+      # print("all_tuples", all_tuples)
+      # print("to_remove", to_remove)
+      # print()
       return all_tuples      
+
+
+
 
 class GPT2Model:
   def __init__(self, model, tokenizer, text):
@@ -236,7 +282,7 @@ def test_windows():
 
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
-    result = model.total_prob(tokens)
+    result = model.total_prob_2(tokens)
     return result
 
 def logp_word_set(model, tokens): 
@@ -272,6 +318,9 @@ def get_windows(model, window_size):
     while append_number != num_windows(len(sentence), window_size):
       window = sentence_trunc[:window_size]
       windows.append(window)
+      # if "<<BOS>>" in window and "<<EOS>>" in window:
+          # print(window)
+          # print(sentence)
       append_number += 1
       sentence_trunc = sentence_trunc[1:]
   return windows
