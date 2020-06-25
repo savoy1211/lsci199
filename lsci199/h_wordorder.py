@@ -77,13 +77,13 @@ class AdditiveSmoothingNGramModel:
       elif len(tokens) > 1:
         try:
           logp_words = self.prefix_logprobs[tuple(tokens[:1+(self.n-2)])]
-          # print("init", tokens[:1+(self.n-2)])
+          print("init", tokens[:1+(self.n-2)])
           for i in range(len(tokens)-self.n+1):
             logp_words += self.ngram_logprobs[ngrams[i]] - self.prefix_logprobs[prefix[i]]
-            # print(ngrams[i], '-', prefix[i])
+            print(ngrams[i], '-', prefix[i])
         except Exception:
-          # print("EXCEPTION FOUND", tokens, tokens[:1+(self.n-2)])
-          # print(self.prefix_logprobs, self.ngram_logprobs)
+          print("EXCEPTION FOUND", tokens, tokens[:1+(self.n-2)])
+          print(self.prefix_logprobs, self.ngram_logprobs)
           return n_inf
       return logp_words
 
@@ -197,6 +197,15 @@ def test_trigram():
   print(h_words_test, h_words_actual)
   assert round(h_words_test, 12) == round(h_words_actual, 12)
 
+def test_4gram():
+  model = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I am from Los Angeles.", n=4)
+  test = logp_words(model, ['my', 'name', 'is', 'ryan'])
+  actual = math.log(1/24,2.0) + math.log(1/18,2.0)
+  print("test", test)
+  print("actual", actual)
+  assert test == actual 
+
+
 def test_ngrams():
   model2 = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I am from Los Angeles.", n=2)
   model3 = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I am from Los Angeles.", n=3)
@@ -214,12 +223,12 @@ def test_ngrams():
   print("test",test)
   assert test == expected
 
-  model = AdditiveSmoothingNGramModel("Hello. Hi, there. My name is Ryan. Ryan Lee. I am a student at University of California, Irvine. I live in Los Angeles", n=4)
-  expected = [(b,b,b),(b,b,"hello"),(b,"hello",e),("hello",e,e),(e,e,e)]
-  test = model.ngrams(model.tokens, 4)
-  print('expected', expected)
-  print('test',test)
-  assert test == expected
+  # model = AdditiveSmoothingNGramModel("Hello. Hi, there. My name is Ryan. Ryan Lee. I am a student at University of California, Irvine. I live in Los Angeles", n=4)
+  # expected = [(b,b,b),(b,b,"hello"),(b,"hello",e),("hello",e,e),(e,e,e)]
+  # test = model.ngrams(model.tokens, 4)
+  # print('expected', expected)
+  # print('test',test)
+  # assert test == expected
 
 def test_windows():
   model = AdditiveSmoothingNGramModel("There once was a frog. He lived in a bog. And he played his fiddle in the middle of a puddle. What a muddle.", n=2)
