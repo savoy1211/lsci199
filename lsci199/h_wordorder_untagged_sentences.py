@@ -62,6 +62,9 @@ class AdditiveSmoothingNGramModel:
         total_val = sum(prefix.values())
         prefix_probs.update({gram: float(math.log((value/total_val),2.0)) for gram, value in prefix.items()})
         prefix_num += 1
+      # print()
+      # print("ngrams", ngram_probs)
+      # print("prefix", prefix_probs)
       return ngram_probs, prefix_probs
 
     def total_prob(self, tokens):
@@ -73,11 +76,14 @@ class AdditiveSmoothingNGramModel:
         if self.n > len(tokens): # only use prefix_logprobs
           for i in range(1,len(tokens)):
             logp_words += self.prefix_logprobs[tuple(tokens[:i+1])] - self.prefix_logprobs[tuple(tokens[:i])] 
+            # print(tokens[:i+1], '-', tokens[:i])
         elif self.n <= len(tokens):
           for i in range(1,self.n-1):
             logp_words += self.prefix_logprobs[tuple(tokens[:i+1])] - self.prefix_logprobs[tuple(tokens[:i])] 
+            # print(tokens[:i+1],"-",tokens[:i])
           for i in range(len(tokens) - self.n+1):
             logp_words += self.ngram_logprobs[tuple(tokens[i:i+self.n])] - self.prefix_logprobs[tuple(tokens[i:i+self.n-1])]
+            # print(tokens[i:i+self.n],'-',tokens[i:i+self.n-1])
       except Exception:
         return n_inf
       return logp_words
@@ -89,134 +95,102 @@ class AdditiveSmoothingNGramModel:
       for i in range(len(tokens)-n+1):
         p = tuple(tokens[i:i+n])
         all_tuples.append(p)
-        for j in range(len(p)-1):
-          if ('<<EOS>>','<<BOS>>') == p[j:j+2]:
-              to_remove.append(p)
-      for i in to_remove:
-        try:
-          all_tuples.remove(i)
-        except ValueError:
-          pass
+        # for j in range(len(p)-1):
+        #   if ('<<EOS>>','<<BOS>>') == p[j:j+2]:
+        #       to_remove.append(p)
+      # for i in to_remove:
+      #   try:
+      #     all_tuples.remove(i)
+        # except ValueError:
+        #   pass
       return all_tuples      
-
-class GPT2Model:
-  def __init__(self, model, tokenizer, text):
-    self.text = text
-    self.window_size = 1
-    self.model = model
-    self.tokenizer = tokenizer
-
-  def total_prob(self, sentence, with_delimiters=True):
-    if with_delimiters:
-        sentence_tokens = [self.tokenizer.bos_token_id] + self.tokenizer.encode(sentence) + [self.tokenizer.eos_token_id]
-    else:
-        sentence_tokens = self.tokenizer.encode(sentence)
-    sentence_tensor = torch.tensor([sentence_tokens])
-    if torch.cuda.is_available():
-        sentence_tensor = sentence_tensor.to('cuda')
-        self.model.to('cuda')
-    with torch.no_grad():
-        predictions = self.model(sentence_tensor)
-        probabilities = torch.log_softmax(predictions[0], -1)
-        # print(probabilities[0].shape)
-        model_probs = probabilities[0, :, tuple(sentence_tokens)].diag(int(with_delimiters))
-        entropy = - (probabilities[0,:,:].exp() * probabilities[0,:,:]).sum(-1)[1:]
-
-    # entropy_reduction = []
-    # for idx, item in enumerate(entropy):
-    #     if idx < len(entropy) - 1:
-    #         entropy_reduction.append(entropy[idx].item() - entropy[idx + 1].item())
-
-    mProb = []
-    # mProb.append(('<BOS>', 0.0))
-    for token, prob in zip(sentence_tokens[1:], model_probs):
-        if self.tokenizer.decode(token) != '<|EOSoftext|>':
-            mProb.append((self.tokenizer.decode(token).strip(' '), prob.item()))
-    # mProb.append(('<EOS>', 0.0))
-
-    return mProb
 
 def test_bigram():
   # window_size = 1
   h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=1)
-  tags_plog, words_plog = [math.log(2/16,2.0)]*4, [math.log(1/16,2.0)]*12
-  h_words_actual = -np.mean(tags_plog + words_plog)
-  # print(h_words_test, h_words_actual)
-  assert round(h_words_test, 12) == round(h_words_actual, 12)  
+  words_plog = [math.log(1/12,2.0)]*12
+  h_words_actual = -np.mean(words_plog)
+  # assert round(h_words_test, 12) == round(h_words_actual, 12) 
+  assert h_words_test == h_words_actual 
 
   # window_size = 2
   h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=2)
-  plog_array = [math.log(1/14,2.0)] * 14
+  plog_array = [math.log(1/11,2.0)] * 10
   h_words_actual = -np.mean(plog_array)
-  assert round(h_words_test, 12) == round(h_words_actual, 12)
+  # assert round(h_words_test, 12) == round(h_words_actual, 12)
+  assert h_words_test == h_words_actual 
 
   # window_size = 3
   h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=3)
-  plog_array = [math.log(1/14,2.0)*2 - math.log(1/16,2.0)]*12
+  plog_array = [math.log(1/12,2.0) + math.log(1/11,2.0) - math.log(1/12,2.0) + math.log(1/11,2.0) -math.log(1/12,2.0)] * 8 
   h_words_actual = -np.mean(plog_array)
-  assert round(h_words_test, 12) == round(h_words_actual, 12)
+  print(h_words_test, h_words_actual)
+  # assert round(h_words_test, 12) == round(h_words_actual, 12)
+  assert h_words_test == h_words_actual 
 
   # window_size = 4
   h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=4)
-  plog_array = [math.log(1/14,2.0)*3-math.log(1/16,2.0)*2]*10
+  plog_array = [math.log(1/12,2.0) + 3*(math.log(1/11,2.0) - math.log(1/12,2.0))]*7
   h_words_actual = -np.mean(plog_array)
   assert round(h_words_test, 12) == round(h_words_actual, 12)  
  
-def test_bigram2():
   # window_size = 5
   h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles."), window_size=5)
-  plog_array = [math.log(1/14,2.0)*4-math.log(1/16,2.0)*3]*8 + [math.log(1/14,2.0)*3-math.log(1/16,2.0)*2]
+  plog_array = [math.log(1/12,2.0) + 4*(math.log(1/11,2.0) - math.log(1/12,2.0))]*6
   h_words_actual = -np.mean(plog_array)
   assert round(h_words_test, 12) == round(h_words_actual, 12) 
 
 def test_trigram():
-  # window_size = 2 (trigram)
-  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles.", n=3), window_size=2)
-  plog_array1, plog_array2 = [math.log(2/18,2.0)] * 4,  [math.log(1/18,2.0)] * 14
-  h_words_actual = -np.mean(plog_array1+plog_array2)
+  # window_size = 3 (trigram)
+  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles.", n=3), window_size=3)
+  plog_array1 = [math.log(1/11,2.0)] + [math.log(1/12,2.0)+math.log(1/11,2.0)-math.log(1/12,2.0)+math.log(1/10,2.0)-math.log(1/11,2.0)] * 8
+  h_words_actual = -np.mean(plog_array1)
   assert round(h_words_test, 12) == round(h_words_actual, 12)
 
-  # window_size = 1 (trigram) 
-  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles.", n=3), window_size=1)
-  plog_array1, plog_array2 = [math.log(4/20,2.0)]*8, [math.log(1/20,2.0)]*12
-  h_words_actual = -np.mean(plog_array1+plog_array2)
+  # window_size = 2 (trigram) 
+  h_words_test, h_word_set_test = survey_text(AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles.", n=3), window_size=2)
+  plog_array1 = [math.log(1/11,2.0)] + [math.log(1/12,2.0)+math.log(1/11,2.0)-math.log(1/12,2.0)]*9
+  h_words_actual = -np.mean(plog_array1)
   assert round(h_words_test, 12) == round(h_words_actual, 12)
 
   model = AdditiveSmoothingNGramModel("Hello, there. My name is Ryan and I am from Los Angeles.", n=3)
-  test = model.total_prob_2(["<<BOS>>","my","name","is","ryan"])
-  actual = 3*math.log(1/16,2.0) - 2*math.log(1/18,2.0)
+  test = model.total_prob(["my","name","is","ryan"])
+  actual = math.log(1/12,2.0)+math.log(1/11,2.0)-math.log(1/12,2.0)+2*(math.log(1/10,2.0)-math.log(1/11,2.0))
   assert test == actual
 
 def test_4gram():
   model = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I am from Los Angeles.", n=4)
-  test = model.total_prob_2(['my', 'name', 'is', 'ryan'])
-  actual = math.log(1/18,2.0)
+  test = model.total_prob(['my', 'name', 'is', 'ryan'])
+  actual = math.log(1/9,2.0)
   assert test == actual 
 
-  test = model.total_prob_2(['my','name','is','ryan','and'])
-  actual = 2*math.log(1/18,2.0) - math.log(1/20,2.0)
+  test = model.total_prob(['my','name','is','ryan','and'])
+  actual = 2*math.log(1/9,2.0) - math.log(1/10,2.0)
   assert test == actual 
 
-  test = model.total_prob_2(['my','name'])
-  actual = math.log(1/22,2.0)
+  test = model.total_prob(['my','name'])
+  actual = math.log(1/11,2.0)
   assert test == actual
+
+  w = get_windows(model, 4)
+  assert w == [['my', 'name', 'is', 'ryan'],['name', 'is', 'ryan', 'and'],['is', 'ryan', 'and', 'i'],['ryan', 'and', 'i', 'am'],['and', 'i', 'am', 'from'],['i', 'am', 'from', 'los'],['am', 'from', 'los', 'angeles']]
 
 def test_ngrams():
   model2 = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I am from Los Angeles.", n=2)
   model3 = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I am from Los Angeles.", n=3)
   model4 = AdditiveSmoothingNGramModel("Hello there. My name is Ryan and I am from Los Angeles.", n=4)
-  assert logp_words(model2, ['ryan']) == math.log(1/16,2.0)
-  assert logp_words(model3, ['ryan']) == math.log(1/20,2.0)
-  assert logp_words(model4, ['ryan']) == math.log(1/24,2.0)
+  assert logp_words(model2, ['ryan']) == logp_words(model3, ['ryan']) == logp_words(model4, ['ryan'])
+  # assert logp_words(model3, ['ryan']) == math.log(1/20,2.0)
+  # assert logp_words(model4, ['ryan']) == math.log(1/24,2.0)
 
-  b, e = '<<BOS>>', '<<EOS>>'
-  a = [b,b,"hello",e,e,b,b,'my','name','is','ryan',e,e,]
-  model = AdditiveSmoothingNGramModel("Hello. My name is ryan.", n=3)
-  expected = [(b,b,"hello"),(b,"hello",e),("hello",e,e),(b,b,"my"),(b,"my","name"),("my","name","is"),("name","is","ryan"),("is","ryan",e),("ryan",e,e)]
-  test = model.ngrams(a,3)
-  print("expected", expected)
-  print("test",test)
-  assert test == expected
+  # b, e = '<<BOS>>', '<<EOS>>'
+  # a = [b,b,"hello",e,e,b,b,'my','name','is','ryan',e,e,]
+  # model = AdditiveSmoothingNGramModel("Hello. My name is ryan.", n=3)
+  # expected = [(b,b,"hello"),(b,"hello",e),("hello",e,e),(b,b,"my"),(b,"my","name"),("my","name","is"),("name","is","ryan"),("is","ryan",e),("ryan",e,e)]
+  # test = model.ngrams(a,3)
+  # print("expected", expected)
+  # print("test",test)
+  # assert test == expected
 
   # model = AdditiveSmoothingNGramModel("Hello. Hi, there. My name is Ryan. Ryan Lee. I am a student at University of California, Irvine. I live in Los Angeles", n=4)
   # expected = [(b,b,b),(b,b,"hello"),(b,"hello",e),("hello",e,e),(e,e,e)]
@@ -228,11 +202,11 @@ def test_ngrams():
 def test_windows():
   model = AdditiveSmoothingNGramModel("There once was a frog. He lived in a bog. And he played his fiddle in the middle of a puddle. What a muddle.", n=2)
   windows = get_windows(model, window_size=5)
-  assert len(windows) == 16
+  assert len(windows) == 10
 
   model = AdditiveSmoothingNGramModel("There once was a frog. He lived in a bog. And he played his fiddle in the middle of a puddle. What a muddle.", n=2)
   windows = get_windows(model, window_size=7)
-  assert len(windows) == 10
+  assert len(windows) == 8
 
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
@@ -262,16 +236,15 @@ def get_windows(model, window_size):
   sentences = sent_detector.tokenize(model.text.strip(), realign_boundaries=False)
   for sentence in sentences:    
     sentence = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
-    # sentence = (model.n-1)*["<<BOS>>"] + sentence + (model.n-1)*["<<EOS>>"]
-    # if len(sentence) == 2*(model.n-1): # if sentence only contains BOS and EOS tags, e.g. ['<<BOS>>', '<<BOS>>', '<<EOS>>', '<<EOS>>']
-    #   break
     window = []
     append_number = 0
     sentence_trunc = sentence
     num_windows = lambda tokens, window_size: 1 if tokens < window_size else tokens-window_size+1
     while append_number != num_windows(len(sentence), window_size):
       window = sentence_trunc[:window_size]
-      windows.append(window)
+      if len(window) > 0 and len(window) == window_size:
+        windows.append(window)
+        print(window)
       append_number += 1
       sentence_trunc = sentence_trunc[1:]
   return windows
@@ -284,26 +257,6 @@ def survey_text(model, window_size):
   H_words = -np.mean(logps_words)
   H_word_sets = -np.mean(logps_word_sets)
   return H_words, H_word_sets
-
-def survey_text_gpt2(model, window_size):
-    # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
-    windows = []
-    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-    sentences = sent_detector.tokenize(model.text.strip(), realign_boundaries=False)
-    for sentence in sentences:    
-      sentence = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
-      for token in sentence:
-        window = []
-        if len(sentence[:window_size]) == window_size: 
-          window = sentence[:window_size]
-          windows.append(window)
-          sentence = sentence[1:]
-    model.window_size = window_size
-    logps_words = np.array([logp_words(model, window) for window in windows])
-    logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
-    H_words = -np.mean(logps_words)
-    H_word_sets = -np.mean(logps_word_sets)
-    return H_words, H_word_sets
 
 if __name__ == '__main__':
     import nose
