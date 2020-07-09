@@ -1,0 +1,3 @@
+add general model class to add alpha values
+larger texts
+shuffle characters, shuffle tokens

@@ -1,4 +1,4 @@
-from h_wordorder2 import *
+from h_wordorder import *
 
 def each_text(texts, text_names, n):
 	for i in range(len(texts)):
@@ -17,12 +17,9 @@ def each_text(texts, text_names, n):
 		pd.DataFrame(df).to_csv(str(n)+"gram_model_results_windows1to5_"+str(text_names[i])+"_randomized2")
 		print("Done! Created "+str(n)+"gram_model_results_windows1to5_"+str(text_names[i])+"_randomized2")
 
-
 each_text([pride_and_prejudice,moby_dick,hard_times,two_cities],['pride_and_prejudice','moby_dick','hard_times','two_cities'], 2)
 
 # each_text([pride_and_prejudice],['pride_and_prejudice'], 4)
 # each_text([moby_dick],['moby_dick'], 4)
 # each_text([hard_times],['hard_times'], 4)
 # each_text([two_cities],['two_cities'], 3)
-
-
