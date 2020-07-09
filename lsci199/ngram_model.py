@@ -102,23 +102,19 @@ class NGramModel:
   def total_logprob(self, tokens):
     total_prob = 0
     w = self.word_probs
-    # print(w.dict_wordbank)
-    # print(w.get_prob(tokens[:1]))
-    try:
-      total_prob = self.logprob(w.get_prob(tokens[:1]))
-      if self.n > len(tokens):
-        for i in range(1, len(tokens)):
-          total_prob += self.logprob(w.get_prob(tokens[:i+1])) - self.logprob(w.get_prob(tokens[:i]))
-      elif self.n <= len(tokens):
-        for i in range(1,self.n-1):
-          total_prob += self.logprob(w.get_prob(tokens[:i+1])) - self.logprob(w.get_prob(tokens[:i]))
-          # print(tokens[:i+1],"-",tokens[:i])
-        for i in range(len(tokens) - self.n+1):
-          total_prob += self.logprob(w.get_prob(tokens[i:i+self.n])) - self.logprob(w.get_prob(tokens[i:i+self.n-1]))
-          # print(tokens[i:i+self.n],'-',tokens[i:i+self.n-1])
-      return total_prob
-    except ValueError:
-      return -float("inf")
+    total_prob = self.logprob(w.get_prob(tokens[:1]))
+    if self.n > len(tokens):
+      for i in range(1, len(tokens)):
+        total_prob += self.logprob(w.get_prob(tokens[:i+1])) - self.logprob(w.get_prob(tokens[:i]))
+    elif self.n <= len(tokens):
+      for i in range(1,self.n-1):
+        total_prob += self.logprob(w.get_prob(tokens[:i+1])) - self.logprob(w.get_prob(tokens[:i]))
+        # print(tokens[:i+1],"-",tokens[:i])
+      for i in range(len(tokens) - self.n+1):
+        total_prob += self.logprob(w.get_prob(tokens[i:i+self.n])) - self.logprob(w.get_prob(tokens[i:i+self.n-1]))
+        # print(tokens[i:i+self.n],'-',tokens[i:i+self.n-1])
+    return total_prob
+
 
   def logprob(self, prob):
     return math.log(prob,2.0)
@@ -126,7 +122,7 @@ class NGramModel:
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
     if model.is_logprob is True:
-      return -model.total_logprob(tokens)
+      return model.total_logprob(tokens)
     return model.total_prob(tokens)
 
 def logp_word_set(model, tokens): 
@@ -182,4 +178,6 @@ def survey_text(model, window_size):
   logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
   H_words = np.mean(logps_words)
   H_word_sets = np.mean(logps_word_sets)
+  if model.is_logprob is True:
+    H_words, H_word_sets = -H_words, -H_word_sets
   return H_words, H_word_sets

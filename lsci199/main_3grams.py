@@ -13,8 +13,8 @@ def each_text(texts, text_names, n, alpha=0):
 
 		d = { 'h_words': h_words, 'h_wordset': h_wordset}
 		df = pd.DataFrame(data=d, dtype=np.float64)
-		pd.DataFrame(df).to_csv("NEW_"+str(n)+"gram_alpha"+str(alpha)+"_windows1to6_"+str(text_names[i]))
-		print("Done! Created "+"NEW_"+str(n)+"gram_alpha"+str(alpha)+"_windows1to6_"+str(text_names[i]))
+		pd.DataFrame(df).to_csv("NEW*_"+str(n)+"gram_alpha"+str(alpha)+"_windows1to6_"+str(text_names[i]))
+		print("Done! Created "+"NEW*_"+str(n)+"gram_alpha"+str(alpha)+"_windows1to6_"+str(text_names[i]))
 
 # each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=1)
 each_text([pride_and_prejudice],['p'], 3, alpha=1)

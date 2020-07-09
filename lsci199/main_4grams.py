@@ -17,5 +17,5 @@ def each_text(texts, text_names, n, alpha=0):
 		print("Done! Created "+"NEW_"+str(n)+"gram_alpha"+str(alpha)+"_windows1to7_"+str(text_names[i]))
 
 # each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 4, alpha=1)
-each_text([pride_and_prejudice],['p'], 4, alpha=0)
+each_text([pride_and_prejudice],['p'], 4, alpha=2)
 
