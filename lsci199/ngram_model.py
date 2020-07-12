@@ -54,7 +54,7 @@ class WordBank:
     try:
       prob_list = self.dict_wordbank[tuple(index)]
       return prob_list[tuple(tokens)].prob
-    except KeyError:
+    except Exception:
       return self.alpha / (self.dict_sizes[len(tokens)]+self.dict_vocabularies[len(tokens)]*self.alpha)
 
   def get_dict_sizes(self):
@@ -66,7 +66,6 @@ class WordBank:
 
   def ngrams(self, tokens, n):
     """Get ngram counts for input"""
-    to_remove = []
     all_tuples = []
     for i in range(len(tokens)-n+1):
       p = tuple(tokens[i:i+n])
@@ -74,14 +73,21 @@ class WordBank:
     return all_tuples 
 
 class NGramModel:
-  def __init__(self, text, alpha, n=2, randomize_text=False, is_logprob=True):
+  def __init__(self, text, alpha, n=2, randomize_text=False, sentence_inbound=True, is_logprob=True):
     self.text = text
     self.alpha = alpha
     self.n = n
     self.randomize_text = randomize_text
-    self.tokens = [token.casefold() for token in nltk.tokenize.word_tokenize(text) if token.isalnum()]
+    self.sentence_inbound = sentence_inbound
+    self.tokens = self.init_tokens()
     self.word_probs = WordBank(self.tokens, alpha=self.alpha, n=self.n)
     self.is_logprob = is_logprob
+
+  def init_tokens(self):
+    tokens = [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
+    if self.randomize_text is True:
+      return shuffle(tokens)
+    return tokens
 
   def total_prob(self, tokens):
     total_prob = 0
@@ -113,10 +119,13 @@ class NGramModel:
       for i in range(len(tokens) - self.n+1):
         total_prob += self.logprob(w.get_prob(tokens[i:i+self.n])) - self.logprob(w.get_prob(tokens[i:i+self.n-1]))
         # print(tokens[i:i+self.n],'-',tokens[i:i+self.n-1])
+    if math.isnan(total_prob):
+      return -float("inf")
     return total_prob
 
-
   def logprob(self, prob):
+    if prob == 0:
+      return -float("inf")
     return math.log(prob,2.0)
 
 def logp_words(model, tokens):
@@ -132,7 +141,7 @@ def logp_word_set(model, tokens):
         logprobs = [0]
     return scipy.special.logsumexp(logprobs)
 
-def get_windows_within_sentence(model, window_size):
+def get_windows_sentence_outbound(model, window_size):
   # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
   windows = []
   sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
@@ -150,7 +159,7 @@ def get_windows_within_sentence(model, window_size):
       sentence_trunc = sentence_trunc[1:]
   return windows
 
-def get_windows_past_sentence(model, window_size):
+def get_windows_sentence_inbound(model, window_size):
   # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
   windows, window = [], []
   t = model.tokens
@@ -165,10 +174,10 @@ def get_windows_past_sentence(model, window_size):
   return windows
 
 def get_windows(model, window_size):
-  if model.randomize_text is True:
-    windows = get_windows_past_sentence(model, window_size)
+  if model.sentence_inbound is True:
+    windows = get_windows_sentence_inbound(model, window_size)
   else:
-    windows = get_windows_within_sentence(model, window_size)
+    windows = get_windows_sentence_outbound(model, window_size)
   return windows
 
 def survey_text(model, window_size):

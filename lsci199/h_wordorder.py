@@ -9,8 +9,8 @@ import nltk
 import math
 from collections import Counter
 import itertools
-import torch
-from transformers import GPT2Tokenizer, GPT2LMHeadModel
+# import torch
+# from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import csv
 from random import shuffle
 
