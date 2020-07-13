@@ -16,7 +16,7 @@ def each_text(texts, text_names, n, alpha=0):
 		pd.DataFrame(df).to_csv(str(n)+"gram_alpha"+str(alpha)+"_1to5_ordered_outbound_"+str(text_names[i]))
 		print("Done! Created "+str(n)+"gram_alpha"+str(alpha)+"_1to5_ordered_outbound_"+str(text_names[i]))
 
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.5)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=1)
+each_text([pride_and_prejudice+moby_dick],['mp'], 3, alpha=0)
+each_text([pride_and_prejudice+moby_dick],['mp'], 3, alpha=0.5)
+each_text([pride_and_prejudice+moby_dick],['mp'], 3, alpha=1)
 
