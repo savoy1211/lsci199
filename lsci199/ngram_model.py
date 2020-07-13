@@ -86,7 +86,7 @@ class NGramModel:
   def init_tokens(self):
     tokens = [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
     if self.randomize_text is True:
-      return shuffle(tokens)
+      shuffle(tokens)
     return tokens
 
   def total_prob(self, tokens):
