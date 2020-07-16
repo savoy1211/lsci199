@@ -73,21 +73,68 @@ class WordBank:
     return all_tuples 
 
 class NGramModel:
-  def __init__(self, text, alpha, n=2, randomize_text=False, sentence_inbound=True, is_logprob=True):
+  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, ):
     self.text = text
     self.alpha = alpha
     self.n = n
     self.randomize_text = randomize_text
+    self.randomize_n = randomize_n
+    self.include_smaller_windows = include_smaller_windows
     self.sentence_inbound = sentence_inbound
+    self.tokens_pre_randomized_text = self.init_tokens_pre_randomized_text()
     self.tokens = self.init_tokens()
     self.word_probs = WordBank(self.tokens, alpha=self.alpha, n=self.n)
     self.is_logprob = is_logprob
 
+  def special_shuffle(self, tokens):
+      sufficient = False
+      num_shuffles = 0
+      tokens.remove('.')
+      while sufficient is False:
+          for i in range(len(tokens)-1):
+              if  (tokens[0] == '.'):
+                  shuffle(tokens)
+                  num_shuffles += 1
+                  break
+              elif (tokens[i] == '.' and tokens[i+1] == '.'):
+                  shuffle(tokens)
+                  num_shuffles += 1
+                  break
+              elif tokens[len(tokens)-1] == '.':
+                  shuffle(tokens)
+                  num_shuffles += 1
+                  break 
+              if i == len(tokens)-2:
+                  sufficient = True
+      tokens.append('.')
+      return tokens
+      
+  def divide_and_conquer(self, tokens, size):
+      final_tokens = []
+      div = int(len(tokens)/size)
+      r = len(tokens) % size
+      for i in range(div):
+          final_tokens += self.special_shuffle(tokens[i*size:(i+1)*size])
+          if i == div-1:
+              final_tokens += self.special_shuffle(tokens[(i+1)*size:(i+1)*size+r])
+      return final_tokens
+  
   def init_tokens(self):
-    tokens = [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
     if self.randomize_text is True:
-      shuffle(tokens)
-    return tokens
+      return list(filter((".").__ne__, self.tokens_pre_randomized_text))
+    return [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
+  
+  def init_tokens_pre_randomized_text(self):
+      if self.randomize_text is True:
+        tokens_pre_randomized_text = [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
+        sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+        sentences = sent_detector.tokenize(self.text.strip(), realign_boundaries=False)
+        for i in range(len(sentences)):
+          tokens_pre_randomized_text.append('.')
+        shuffle(tokens_pre_randomized_text)
+        tokens_pre_randomized_text = self.divide_and_conquer(tokens_pre_randomized_text, 2000)
+        self.text = " ".join(tokens_pre_randomized_text)
+        return tokens_pre_randomized_text
 
   def total_prob(self, tokens):
     total_prob = 0
@@ -141,11 +188,14 @@ def logp_word_set(model, tokens):
         logprobs = [0]
     return scipy.special.logsumexp(logprobs)
 
-def get_windows_sentence_outbound(model, window_size):
+def get_windows_sentence_inbound(model, window_size):
   # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
   windows = []
   sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-  sentences = sent_detector.tokenize(model.text.strip(), realign_boundaries=False)
+  if model.randomize_text is False:
+    sentences = sent_detector.tokenize(model.text.strip(), realign_boundaries=False)
+  else:
+    sentences = sent_detector.tokenize(" ".join(model.tokens_pre_randomized_text), realign_boundaries=False) 
   for sentence in sentences:    
     sentence = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
     window = []
@@ -153,13 +203,17 @@ def get_windows_sentence_outbound(model, window_size):
     num_windows = lambda tokens, window_size: 1 if tokens < window_size else tokens-window_size+1
     while append_number != num_windows(len(sentence), window_size):
       window = sentence_trunc[:window_size]
-      if len(window) > 0 and len(window) == window_size:
-        windows.append(window)
+      if model.include_smaller_windows is False:
+        if len(window) > 0 and len(window) == window_size:
+          windows.append(window)
+      else:
+        if len(window) > 0 and len(window) <= window_size:
+          windows.append(window)
       append_number += 1
       sentence_trunc = sentence_trunc[1:]
   return windows
 
-def get_windows_sentence_inbound(model, window_size):
+def get_windows_sentence_outbound(model, window_size):
   # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
   windows, window = [], []
   t = model.tokens

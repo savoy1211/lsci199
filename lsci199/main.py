@@ -13,8 +13,8 @@ def each_text(texts, text_names, n, alpha=0):
 
 		d = { 'h_words': h_words, 'h_wordset': h_wordset}
 		df = pd.DataFrame(data=d, dtype=np.float64)
-		pd.DataFrame(df).to_csv("NEW_"+str(n)+"gram_model_results_windows1to5_"+str(text_names[i]))
-		print("Done! Created "+"NEW_"+str(n)+"gram_model_results_windows1to5_"+str(text_names[i]))
+		pd.DataFrame(df).to_csv("test_"+str(n)+"gram_model_results_windows1to5_"+str(text_names[i]))
+		print("Done! Created "+"test_"+str(n)+"gram_model_results_windows1to5_"+str(text_names[i]))
 
 
 # tokenizer = GPT2Tokenizer.from_pretrained('gpt2')

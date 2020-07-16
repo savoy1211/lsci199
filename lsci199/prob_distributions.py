@@ -6,7 +6,7 @@ def get_prob_distributions(model):
 	if model.randomize_text is False:
 		parameter += "ordered_"
 	else:
-		parameter += "random"
+		parameter += "random"+str(model.randomize_n)+"_"
 	if model.sentence_inbound is True:
 		parameter += "inbound"
 	else:
@@ -40,6 +40,14 @@ def get_prob_distributions(model):
 text = pride_and_prejudice+moby_dick+hard_times+two_cities
 # get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=False, sentence_inbound=True))
 # get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=False, sentence_inbound=False))
-get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=True))
-get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=False))
+# get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=True, randomize_n=10))
+# get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=False, randomize_n=10))
 
+# get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=True, randomize_n=50))
+# get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=False, randomize_n=50))
+
+# get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=True, randomize_n=100))
+# get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=False, randomize_n=100))
+
+get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=True, randomize_n=200))
+get_prob_distributions(NGramModel(text, alpha=0.5, n=3, randomize_text=True, sentence_inbound=False, randomize_n=200))
