@@ -29,7 +29,7 @@ class WordBank:
           dict0[i[len(i)-1:len(i)]] = [i] 
       current_n += 1
     for k,v in dict0.items():
-      final_dict[k] = self.get_ngram_probs(l)
+      final_dict[k] = self.get_ngram_probs(Counter(v))
     return final_dict
 
   def get_ngram_probs(self, counter):
