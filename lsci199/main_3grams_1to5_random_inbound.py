@@ -20,7 +20,8 @@ def each_text(texts, text_names, n, alpha=0):
 		end = time.time()
 		print(end-start)
 		
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.1)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.5)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=1)
+each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.00)
+each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.01)
+each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.10)
+each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.25)
+each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.50)

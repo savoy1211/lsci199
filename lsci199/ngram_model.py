@@ -1,25 +1,5 @@
 from h_wordorder import *
 
-class NGramProbs:
-  def __init__(self, ngram, index, count, total_count, vocabulary, alpha=0,):
-    self.ngram = ngram
-    self.index = index
-    self.count = count + alpha
-    self.vocabulary = vocabulary
-    self.total_count = total_count + (vocabulary*alpha)
-    self.alpha = alpha
-    self.prob = count / total_count
-
-  def print_data(self):
-    print("   ngram", self.ngram)
-    print("   index", self.index)
-    print("   count", self.count)
-    print("   total_count", self.total_count)
-    print("   vocabulary", self.vocabulary)
-    print("   alpha", self.alpha)
-    print("   prob", self.prob)
-    print()
-
 class WordBank:
   def __init__(self, tokens, alpha, n=1):
     self.tokens = tokens
@@ -27,7 +7,16 @@ class WordBank:
     self.alpha = alpha
     self.dict_sizes, self.dict_vocabularies = self.get_dict_sizes()
     self.dict_wordbank = self.init_index()
-
+    self.index_NGramConditionalProbs()
+    
+  def index_NGramConditionalProbs(self):
+    w = self.dict_wordbank
+    for i, j in w.items():
+      for k,v in j.items():
+        v.dict_wordbank = w
+        v.init_total_count()
+        v.init_prob()
+  
   def init_index(self):
     current_n = 1
     dict0, final_dict = {}, {}
@@ -40,12 +29,12 @@ class WordBank:
           dict0[i[len(i)-1:len(i)]] = [i] 
       current_n += 1
     for k,v in dict0.items():
-      final_dict[k] = self.get_ngram_probs(Counter(v))
+      final_dict[k] = self.get_ngram_probs(l)
     return final_dict
 
   def get_ngram_probs(self, counter):
     k,v = list(counter.keys()), list(counter.values())
-    values = [NGramProbs(ngram=k[i], index=k[i][len(k[i])-1:len(k[i])], count=v[i], total_count=self.dict_sizes[len(list(k[i]))], vocabulary=self.dict_vocabularies[len(list(k[i]))], alpha=self.alpha) for i in range(len(k))]
+    values = [NGramConditionalProbs(ngram=k[i], index=k[i][len(k[i])-1:len(k[i])], count=v[i], vocabulary=self.dict_vocabularies[len(list(k[i]))], alpha=self.alpha) for i in range(len(k))]
     keys = [k[i] for i in range(len(k))] 
     return dict(zip(keys,values))
 
@@ -72,8 +61,55 @@ class WordBank:
       all_tuples.append(p)
     return all_tuples 
 
+class NGramConditionalProbs:
+  def __init__(self, ngram, index, count, vocabulary, alpha=0):
+    self.ngram = ngram
+    self.index = index
+    self.count = count + alpha
+    self.count_pre_alpha = count
+    self.vocabulary = vocabulary
+    self.total_count = 0
+    self.alpha = alpha
+    self.prob = 0
+    self.dict_wordbank = {}
+    self.unigram_count = 0
+    
+  def init_prob(self):
+    self.prob = self.count / self.total_count
+  
+  def init_total_count(self):
+    ngram_count = len(self.ngram)-1
+    prefix_gram = self.ngram[:len(self.ngram)-1]
+    index = tuple(prefix_gram[len(prefix_gram)-1:len(prefix_gram)])
+    if ngram_count == 0:
+      ngram_count = 1
+      if self.unigram_count == 0:
+        self.unigram_count = self.get_unigram_counts()
+      self.total_count = self.unigram_count + (self.vocabulary * self.alpha)
+    else:
+      count = self.dict_wordbank[index][prefix_gram].count_pre_alpha
+      self.total_count = count + (self.vocabulary * self.alpha)
+
+  def get_unigram_counts(self):
+    w = self.dict_wordbank
+    tot_counts = 0
+    for i,j in w.items():
+      index = i
+      tot_counts += w[index][index].count_pre_alpha
+    return tot_counts
+
+  def print_data(self):
+    print("   ngram", self.ngram)
+    print("   index", self.index)
+    print("   count", self.count)
+    print("   total_count", self.total_count)
+    print("   vocabulary", self.vocabulary)
+    print("   alpha", self.alpha)
+    print("   prob", self.prob)
+    print()
+
 class NGramModel:
-  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, ):
+  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, random_div=2000):
     self.text = text
     self.alpha = alpha
     self.n = n
@@ -81,6 +117,7 @@ class NGramModel:
     self.randomize_n = randomize_n
     self.include_smaller_windows = include_smaller_windows
     self.sentence_inbound = sentence_inbound
+    self.random_div = random_div
     self.tokens_pre_randomized_text = self.init_tokens_pre_randomized_text()
     self.tokens = self.init_tokens()
     self.word_probs = WordBank(self.tokens, alpha=self.alpha, n=self.n)
@@ -89,7 +126,11 @@ class NGramModel:
   def special_shuffle(self, tokens):
       sufficient = False
       num_shuffles = 0
-      tokens.remove('.')
+      period_exists = True
+      try:
+        tokens.remove('.')
+      except ValueError:
+        period_exists = False
       while sufficient is False:
           for i in range(len(tokens)-1):
               if  (tokens[0] == '.'):
@@ -106,7 +147,8 @@ class NGramModel:
                   break 
               if i == len(tokens)-2:
                   sufficient = True
-      tokens.append('.')
+      if period_exists is True:
+        tokens.append('.')
       return tokens
       
   def divide_and_conquer(self, tokens, size):
@@ -132,9 +174,14 @@ class NGramModel:
         for i in range(len(sentences)):
           tokens_pre_randomized_text.append('.')
         shuffle(tokens_pre_randomized_text)
-        tokens_pre_randomized_text = self.divide_and_conquer(tokens_pre_randomized_text, 2000)
+        tokens_pre_randomized_text = self.divide_and_conquer(tokens_pre_randomized_text, self.random_div)
         self.text = " ".join(tokens_pre_randomized_text)
         return tokens_pre_randomized_text
+
+#   def total_conditional_prob(self, tokens):
+#       total_prob = 0
+#       w = self.word_probs
+#       total_prob = w.get_prob(tokens[:1])
 
   def total_prob(self, tokens):
     total_prob = 0
@@ -146,10 +193,10 @@ class NGramModel:
     elif self.n <= len(tokens):
       for i in range(1,self.n-1):
         total_prob *= w.get_prob(tokens[:i+1]) / w.get_prob(tokens[:i])
-        # print(tokens[:i+1],"-",tokens[:i])
+        print(tokens[:i+1],"/",tokens[:i])
       for i in range(len(tokens) - self.n+1):
         total_prob *= w.get_prob(tokens[i:i+self.n]) / w.get_prob(tokens[i:i+self.n-1])
-        # print(tokens[i:i+self.n],'-',tokens[i:i+self.n-1])
+        print(tokens[i:i+self.n],'/',tokens[i:i+self.n-1])
     return total_prob
 
   def total_logprob(self, tokens):
