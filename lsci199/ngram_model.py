@@ -109,8 +109,9 @@ class NGramConditionalProbs:
     print()
 
 class NGramModel:
-  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, random_div=2000):
+  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, random_div=2000, ordered_windows=True):
     self.text = text
+    self.text_randomized = ''
     self.alpha = alpha
     self.n = n
     self.randomize_text = randomize_text
@@ -122,6 +123,7 @@ class NGramModel:
     self.tokens = self.init_tokens()
     self.word_probs = WordBank(self.tokens, alpha=self.alpha, n=self.n)
     self.is_logprob = is_logprob
+    self.ordered_windows = ordered_windows
 
   def special_shuffle(self, tokens):
       sufficient = False
@@ -167,16 +169,16 @@ class NGramModel:
     return [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
   
   def init_tokens_pre_randomized_text(self):
-      if self.randomize_text is True:
-        tokens_pre_randomized_text = [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
-        sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-        sentences = sent_detector.tokenize(self.text.strip(), realign_boundaries=False)
-        for i in range(len(sentences)):
-          tokens_pre_randomized_text.append('.')
-        shuffle(tokens_pre_randomized_text)
-        tokens_pre_randomized_text = self.divide_and_conquer(tokens_pre_randomized_text, self.random_div)
-        self.text = " ".join(tokens_pre_randomized_text)
-        return tokens_pre_randomized_text
+      # if self.randomize_text is True:
+      tokens_pre_randomized_text = [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
+      sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+      sentences = sent_detector.tokenize(self.text.strip(), realign_boundaries=False)
+      for i in range(len(sentences)):
+        tokens_pre_randomized_text.append('.')
+      shuffle(tokens_pre_randomized_text)
+      tokens_pre_randomized_text = self.divide_and_conquer(tokens_pre_randomized_text, self.random_div)
+      self.text_randomized = " ".join(tokens_pre_randomized_text)
+      return tokens_pre_randomized_text
 
 #   def total_conditional_prob(self, tokens):
 #       total_prob = 0
@@ -239,9 +241,9 @@ def get_windows_sentence_inbound(model, window_size):
   # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
   windows = []
   sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-  if model.randomize_text is False:
+  if model.ordered_windows is True:
     sentences = sent_detector.tokenize(model.text.strip(), realign_boundaries=False)
-  else:
+  elif model.ordered_windows is False:
     sentences = sent_detector.tokenize(" ".join(model.tokens_pre_randomized_text), realign_boundaries=False) 
   for sentence in sentences:    
     sentence = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]

@@ -2,13 +2,16 @@ from ngram_model import *
 
 # text = "Hello there. My name is Ryan and I am from Los Angeles. I am currently an undergraduate at UCI studying Language Science. I love to listen to jazz, and I enjoy running and climbing. Nice to meet you all. Your turn."
 text = moby_dick
-m1 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
-m2 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
-m3 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
-m4 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
-m5 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
+m_rt_rw = NGramModel(text, alpha=0.1, n=3, randomize_text=True, ordered_windows=False)
+m_rt_ow = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
+m_ot_rw = NGramModel(text, alpha=0.1, n=3, ordered_windows=False)
+m_ot_ow = NGramModel(text, alpha=0.1, n=3)
+# m2 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
+# m3 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
+# m4 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
+# m5 = NGramModel(text, alpha=0.1, n=3, randomize_text=True)
 
-n = NGramModel(text, alpha=0.1, n=3)
+
 
 
 text_lo_e = "1 0 1 1 1 1 0 0 1 1 0 1 1 1 1 0 0 1 0 0 0 1 1 1 0 1 0 1 1 1"

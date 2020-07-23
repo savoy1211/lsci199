@@ -5,7 +5,7 @@ import time
 def each_text(texts, text_names, n, alpha=0):
 	for i in range(len(texts)):
 		start = time.time()
-		model = NGramModel(texts[i], alpha=alpha, n=n)
+		model = NGramModel(texts[0], alpha=alpha, n=n)
 		h_words, h_wordset = [], []
 		for j in range(1,6):
 			h_words_current, h_wordset_current = survey_text(model, j)
@@ -15,8 +15,8 @@ def each_text(texts, text_names, n, alpha=0):
 
 		d = { 'h_words': h_words, 'h_wordset': h_wordset}
 		df = pd.DataFrame(data=d, dtype=np.float64)
-		pd.DataFrame(df).to_csv(str(n)+"gram_ordered_inbound_alpha"+str(alpha)+"_1to5_"+str(text_names[i]))
-		print("Done! Created "+str(n)+"gram_ordered_inbound_alpha"+str(alpha)+"_1to5_"+str(text_names[i]))
+		pd.DataFrame(df).to_csv(str(n)+"gram_ordered_inbound_alpha"+str(alpha)+"_1to5_"+str(text_names[0]))
+		print("Done! Created "+str(n)+"gram_ordered_inbound_alpha"+str(alpha)+"_1to5_"+str(text_names[0]))
 		end = time.time()
 		print(end-start)
 
