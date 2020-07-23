@@ -1,5 +1,6 @@
 from h_wordorder import *
 from ngram_model import *
+from download_gutenberg_texts import *
 import time
 
 def each_text(texts, text_names, n, alpha=0):
@@ -20,8 +21,11 @@ def each_text(texts, text_names, n, alpha=0):
 		end = time.time()
 		print(end-start)
 
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.00)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.01)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.10)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.25)
-each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.50)
+# each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.00)
+# each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.01)
+# each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.10)
+# each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.25)
+# each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.50)
+
+each_text([mega_text],['mega_text_100'], 3, alpha=0.10)
+
