@@ -1,6 +1,6 @@
 from h_wordorder import *
 from ngram_model import *
-from download_local_gutenberg_texts import 
+from download_local_gutenberg_texts import *
 import time
 
 def each_text(training_text, training_text_names, testing_text, testing_text_names, n, alpha=0):
