@@ -119,13 +119,17 @@ urls = {
     
 }
 
-mega_text_100, mega_text_50 = '', ''
+mega_text_100, mega_text_90, mega_text_50, mega_text_10 = '','','',''
 
 i = 0
 for k,v in urls.items():
   mega_text_100 += download_gutenberg_text(v[0])
   # print(k, len(download_gutenberg_text(v[0])))
+  if i < 90:
+    mega_text_90 += download_gutenberg_text(v[0])
   if i < 50:
     mega_text_50 += download_gutenberg_text(v[0])
+  if i < 10:
+    mega_text_10 += download_gutenberg_text(v[0])
   i+=1
   

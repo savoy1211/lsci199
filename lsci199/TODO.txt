@@ -1,0 +1,23 @@
+1. ot_ow_outbound
+    NGramModel(text, alpha=0.1, n=3, sentence_inbound=False)
+
+2. rt_rw_outbound
+    NGramModel(text, alpha=0.1, n=3, randomize_text=True, randomize_sentence_inbound=False, sentence_inbound=False)
+        Training Text = Testing Windows
+
+3. ot_ow_inbound
+    NGramModel(text, alpha=0.1, n=3)
+    
+4. rt_rw_inbound
+    NGramModel(text, alpha=0.1, n=3, randomize_text=True, randomize_sentence_inbound=True, ordered_windows=False)
+        Training Text = Testing Windows
+        
+survey_text() -> required model object fields [for WINDOWS, test]
+    -sentence_inbound
+    -tokens
+    -ordered_windows
+    -include_smaller_windows
+    -tokens_pre_randomized_text
+    -text
+
+

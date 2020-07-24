@@ -37,7 +37,7 @@ def each_text(texts, text_names, n, alpha=0):
 	# print(end-start)
 	
 	start = time.time()
-	model = NGramModel(texts[0], alpha=alpha, n=n, randomize_text=True, ordered_windows=False)
+	model = NGramModel(texts[0], alpha=alpha, n=n, randomize_text=True, randomize_sentence_inbound=True, ordered_windows=False)
 	h_words, h_wordset = [], []
 	for j in range(1,6):
 		h_words_current, h_wordset_current = survey_text(model, j)

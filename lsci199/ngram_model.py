@@ -125,44 +125,6 @@ class NGramModel:
     self.word_probs = WordBank(self.tokens, alpha=self.alpha, n=self.n)
     self.is_logprob = is_logprob
     self.ordered_windows = ordered_windows
-
-  # def special_shuffle(self, tokens):
-  #     sufficient = False
-  #     num_shuffles = 0
-  #     period_exists = True
-  #     try:
-  #       tokens.remove('.')
-  #     except ValueError:
-  #       period_exists = False
-  #     while sufficient is False:
-  #         for i in range(len(tokens)-1):
-  #             if  (tokens[0] == '.'):
-  #                 shuffle(tokens)
-  #                 num_shuffles += 1
-  #                 break
-  #             elif (tokens[i] == '.' and tokens[i+1] == '.'):
-  #                 shuffle(tokens)
-  #                 num_shuffles += 1
-  #                 break
-  #             elif tokens[len(tokens)-1] == '.':
-  #                 shuffle(tokens)
-  #                 num_shuffles += 1
-  #                 break 
-  #             if i == len(tokens)-2:
-  #                 sufficient = True
-  #     if period_exists is True:
-  #       tokens.append('.')
-  #     return tokens
-      
-  # def divide_and_conquer(self, tokens, size):
-  #     final_tokens = []
-  #     div = int(len(tokens)/size)
-  #     r = len(tokens) % size
-  #     for i in range(div):
-  #         final_tokens += self.special_shuffle(tokens[i*size:(i+1)*size])
-  #         if i == div-1:
-  #             final_tokens += self.special_shuffle(tokens[(i+1)*size:(i+1)*size+r])
-  #     return final_tokens
   
   def init_tokens(self):
     if self.randomize_text is True:
@@ -182,21 +144,19 @@ class NGramModel:
       #   self.text_randomized = " ".join(tokens_pre_randomized_text)
       #   return tokens_pre_randomized_text
       # elif self.sentence_inbound is False:
-      final_randomized_tokens = []
-      for sentence in sentences:
-        sentence_tokens = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
-        shuffle(sentence_tokens)
-        final_randomized_tokens += sentence_tokens
-      self.text_randomized = " ".join(final_randomized_tokens)
-      return final_randomized_tokens
+      if self.randomize_sentence_inbound is True:
+        final_randomized_tokens = []
+        for sentence in sentences:
+          sentence_tokens = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
+          shuffle(sentence_tokens)
+          final_randomized_tokens += sentence_tokens+['.']
+        self.text_randomized = " ".join(final_randomized_tokens)
+        return final_randomized_tokens
+      else:
+        shuffle(tokens_pre_randomized_text)
+        self.text_randomized = " ".join(tokens_pre_randomized_text)
+        return tokens_pre_randomized_text
       
-        
-
-#   def total_conditional_prob(self, tokens):
-#       total_prob = 0
-#       w = self.word_probs
-#       total_prob = w.get_prob(tokens[:1])
-
   def total_prob(self, tokens):
     total_prob = 0
     w = self.word_probs
@@ -236,6 +196,19 @@ class NGramModel:
       return -float("inf")
     return math.log(prob,2.0)
 
+class TestCorpus(NGramModel):
+  def __init__(self, text, sentence_inbound=True, randomize_text=False, include_smaller_windows=False, ordered_windows=True):
+    self.text = text
+    self.text_randomized = ''
+    self.randomize_text = randomize_text
+    self.tokens = self.init_tokens()
+    self.tokens_pre_randomized_text = self.init_tokens_pre_randomized_text()
+    self.sentence_inbound = sentence_inbound
+    self.include_smaller_windows = include_smaller_windows
+    self.ordered_windows = ordered_windows
+    
+  
+
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
     if model.is_logprob is True:
@@ -249,14 +222,14 @@ def logp_word_set(model, tokens):
         logprobs = [0]
     return scipy.special.logsumexp(logprobs)
 
-def get_windows_sentence_inbound(model, window_size):
+def get_windows_sentence_inbound(test, window_size):
   # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
   windows = []
   sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-  if model.ordered_windows is True:
-    sentences = sent_detector.tokenize(model.text.strip(), realign_boundaries=False)
-  elif model.ordered_windows is False:
-    sentences = sent_detector.tokenize(" ".join(model.tokens_pre_randomized_text), realign_boundaries=False) 
+  if test.ordered_windows is True:
+    sentences = sent_detector.tokenize(test.text.strip(), realign_boundaries=False)
+  elif test.ordered_windows is False:
+    sentences = sent_detector.tokenize(" ".join(test.tokens_pre_randomized_text), realign_boundaries=False) 
   for sentence in sentences:    
     sentence = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
     window = []
@@ -264,7 +237,7 @@ def get_windows_sentence_inbound(model, window_size):
     num_windows = lambda tokens, window_size: 1 if tokens < window_size else tokens-window_size+1
     while append_number != num_windows(len(sentence), window_size):
       window = sentence_trunc[:window_size]
-      if model.include_smaller_windows is False:
+      if test.include_smaller_windows is False:
         if len(window) > 0 and len(window) == window_size:
           windows.append(window)
       else:
@@ -274,10 +247,10 @@ def get_windows_sentence_inbound(model, window_size):
       sentence_trunc = sentence_trunc[1:]
   return windows
 
-def get_windows_sentence_outbound(model, window_size):
+def get_windows_sentence_outbound(test, window_size):
   # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
   windows, window = [], []
-  t = model.tokens
+  t = test.tokens
   append_number, sentence_trunc = 0, t
   num_windows = lambda tokens, window_size: 1 if tokens < window_size else tokens-window_size+1
   while append_number != num_windows(len(t), window_size):
@@ -288,14 +261,14 @@ def get_windows_sentence_outbound(model, window_size):
     sentence_trunc = sentence_trunc[1:]
   return windows
 
-def get_windows(model, window_size):
-  if model.sentence_inbound is True:
-    windows = get_windows_sentence_inbound(model, window_size)
+def get_windows(test, window_size):
+  if test.sentence_inbound is True:
+    windows = get_windows_sentence_inbound(test, window_size)
   else:
-    windows = get_windows_sentence_outbound(model, window_size)
+    windows = get_windows_sentence_outbound(test, window_size)
   return windows
 
-def survey_text(model, window_size):
+def survey_text(model, test, window_size):
   # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
   windows = get_windows(model, window_size)
   logps_words = np.array([logp_words(model, window) for window in windows])
