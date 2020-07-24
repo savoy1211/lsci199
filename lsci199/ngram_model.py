@@ -109,12 +109,13 @@ class NGramConditionalProbs:
     print()
 
 class NGramModel:
-  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, random_div=2000, ordered_windows=True):
+  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_sentence_inbound=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, random_div=2000, ordered_windows=True):
     self.text = text
     self.text_randomized = ''
     self.alpha = alpha
     self.n = n
     self.randomize_text = randomize_text
+    self.randomize_sentence_inbound = randomize_sentence_inbound
     self.randomize_n = randomize_n
     self.include_smaller_windows = include_smaller_windows
     self.sentence_inbound = sentence_inbound
@@ -125,43 +126,43 @@ class NGramModel:
     self.is_logprob = is_logprob
     self.ordered_windows = ordered_windows
 
-  def special_shuffle(self, tokens):
-      sufficient = False
-      num_shuffles = 0
-      period_exists = True
-      try:
-        tokens.remove('.')
-      except ValueError:
-        period_exists = False
-      while sufficient is False:
-          for i in range(len(tokens)-1):
-              if  (tokens[0] == '.'):
-                  shuffle(tokens)
-                  num_shuffles += 1
-                  break
-              elif (tokens[i] == '.' and tokens[i+1] == '.'):
-                  shuffle(tokens)
-                  num_shuffles += 1
-                  break
-              elif tokens[len(tokens)-1] == '.':
-                  shuffle(tokens)
-                  num_shuffles += 1
-                  break 
-              if i == len(tokens)-2:
-                  sufficient = True
-      if period_exists is True:
-        tokens.append('.')
-      return tokens
+  # def special_shuffle(self, tokens):
+  #     sufficient = False
+  #     num_shuffles = 0
+  #     period_exists = True
+  #     try:
+  #       tokens.remove('.')
+  #     except ValueError:
+  #       period_exists = False
+  #     while sufficient is False:
+  #         for i in range(len(tokens)-1):
+  #             if  (tokens[0] == '.'):
+  #                 shuffle(tokens)
+  #                 num_shuffles += 1
+  #                 break
+  #             elif (tokens[i] == '.' and tokens[i+1] == '.'):
+  #                 shuffle(tokens)
+  #                 num_shuffles += 1
+  #                 break
+  #             elif tokens[len(tokens)-1] == '.':
+  #                 shuffle(tokens)
+  #                 num_shuffles += 1
+  #                 break 
+  #             if i == len(tokens)-2:
+  #                 sufficient = True
+  #     if period_exists is True:
+  #       tokens.append('.')
+  #     return tokens
       
-  def divide_and_conquer(self, tokens, size):
-      final_tokens = []
-      div = int(len(tokens)/size)
-      r = len(tokens) % size
-      for i in range(div):
-          final_tokens += self.special_shuffle(tokens[i*size:(i+1)*size])
-          if i == div-1:
-              final_tokens += self.special_shuffle(tokens[(i+1)*size:(i+1)*size+r])
-      return final_tokens
+  # def divide_and_conquer(self, tokens, size):
+  #     final_tokens = []
+  #     div = int(len(tokens)/size)
+  #     r = len(tokens) % size
+  #     for i in range(div):
+  #         final_tokens += self.special_shuffle(tokens[i*size:(i+1)*size])
+  #         if i == div-1:
+  #             final_tokens += self.special_shuffle(tokens[(i+1)*size:(i+1)*size+r])
+  #     return final_tokens
   
   def init_tokens(self):
     if self.randomize_text is True:
@@ -169,16 +170,27 @@ class NGramModel:
     return [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
   
   def init_tokens_pre_randomized_text(self):
-      # if self.randomize_text is True:
+    if self.randomize_text is True:
       tokens_pre_randomized_text = [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
       sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
       sentences = sent_detector.tokenize(self.text.strip(), realign_boundaries=False)
-      for i in range(len(sentences)):
-        tokens_pre_randomized_text.append('.')
-      shuffle(tokens_pre_randomized_text)
-      tokens_pre_randomized_text = self.divide_and_conquer(tokens_pre_randomized_text, self.random_div)
-      self.text_randomized = " ".join(tokens_pre_randomized_text)
-      return tokens_pre_randomized_text
+      # if self.randomize_sentence_inbound is False:
+      #   for i in range(len(sentences)):
+      #     tokens_pre_randomized_text.append('.')
+      #   shuffle(tokens_pre_randomized_text)
+      #   tokens_pre_randomized_text = self.divide_and_conquer(tokens_pre_randomized_text, self.random_div)
+      #   self.text_randomized = " ".join(tokens_pre_randomized_text)
+      #   return tokens_pre_randomized_text
+      # elif self.sentence_inbound is False:
+      final_randomized_tokens = []
+      for sentence in sentences:
+        sentence_tokens = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
+        shuffle(sentence_tokens)
+        final_randomized_tokens += sentence_tokens
+      self.text_randomized = " ".join(final_randomized_tokens)
+      return final_randomized_tokens
+      
+        
 
 #   def total_conditional_prob(self, tokens):
 #       total_prob = 0
