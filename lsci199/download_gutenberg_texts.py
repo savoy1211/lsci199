@@ -4,6 +4,9 @@ def download_gutenberg_text(url):
   """ Download a text file from a Project Gutenberg URL and return it as a string. """
   return requests.get(url).content.decode('utf-8', 'ignore')[1:] # Remove the weird initial character
 
+
+
+
 urls = {
     'alice_in_wonderland': ['https://www.gutenberg.org/files/11/11-0.txt'],
     'sherlock_holmes': ['https://www.gutenberg.org/files/1661/1661-0.txt'],
