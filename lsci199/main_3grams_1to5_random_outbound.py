@@ -6,8 +6,8 @@ import time
 def each_text(training_text, training_text_names, testing_text, testing_text_names, n, alpha=0):
 	for i in range(len(training_text)):
 		start = time.time()
-		model = NGramModel(training_text[0], alpha=alpha, n=n, sentence_inbound=False)
-		test = TestCorpus(testing_text[0], sentence_inbound=False)
+		model = NGramModel(training_text[0], alpha=alpha, n=n, randomize_text=True, sentence_inbound=True, randomize_sentence_inbound=True, ordered_windows=False)
+		test = TestCorpus(testing_text[0], randomize_text=True, sentence_inbound=True, randomize_sentence_inbound=True, ordered_windows=False)
 		h_words, h_wordset = [], []
 		for j in range(1,6):
 			h_words_current, h_wordset_current = survey_text(model, test, j)
@@ -28,4 +28,4 @@ def each_text(training_text, training_text_names, testing_text, testing_text_nam
 # each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.25)
 # each_text([pride_and_prejudice+moby_dick+hard_times+two_cities],['mpht'], 3, alpha=0.50)
 
-each_text([mega_text_90],['train(mega_text_90)_'], [mega_text_10], ['_test(mega_text_10)'], 3, alpha=0.10)
+each_text([mega_text_90],['train(mega_text_90)_'], [mega_text_10], ['test(mega_text_10)'], 3, alpha=0.10)
