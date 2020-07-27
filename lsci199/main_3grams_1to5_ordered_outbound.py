@@ -18,8 +18,8 @@ def each_text(training_text, training_text_names, testing_text, testing_text_nam
 
 		d = { 'h_words': h_words, 'h_wordset': h_wordset, 'zeros_permutations': zeros_permutations}
 		df = pd.DataFrame(data=d, dtype=np.float64)
-		pd.DataFrame(df).to_csv(str(n)+"gram_random_inbound_alpha"+str(alpha)+"_1to5_"+str(training_text_names[0])+str(testing_text_names[0]))
-		print("Done! Created "+str(n)+"gram_random_inbound_alpha"+str(alpha)+"_1to5_"+str(training_text_names[0])+str(testing_text_names[0]))
+		pd.DataFrame(df).to_csv(str(n)+"gram_ordered_outbound_alpha"+str(alpha)+"_1to5_"+str(training_text_names[0])+str(testing_text_names[0]))
+		print("Done! Created "+str(n)+"gram_ordered_outbound_alpha"+str(alpha)+"_1to5_"+str(training_text_names[0])+str(testing_text_names[0]))
 		end = time.time()
 		print(end-start)
 		
