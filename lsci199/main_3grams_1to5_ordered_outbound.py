@@ -6,8 +6,8 @@ import time
 def each_text(training_text, training_text_names, testing_text, testing_text_names, n, alpha=0):
 	for i in range(len(training_text)):
 		start = time.time()
-		model = NGramModel(training_text[0], alpha=alpha, n=n, sentence_inbound=True)
-		test = TestCorpus(testing_text[0], sentence_inbound=True)
+		model = NGramModel(training_text[0], alpha=alpha, n=n, sentence_inbound=False)
+		test = TestCorpus(testing_text[0], sentence_inbound=False)
 		h_words, h_wordset = [], []
 		for j in range(1,6):
 			h_words_current, h_wordset_current = survey_text(model, test, j)
