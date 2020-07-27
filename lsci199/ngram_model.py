@@ -109,7 +109,7 @@ class NGramConditionalProbs:
     print()
 
 class NGramModel:
-  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_sentence_inbound=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, random_div=2000, ordered_windows=True):
+  def __init__(self, text, alpha, n=2, randomize_text=False, randomize_sentence_inbound=False, randomize_n=1, sentence_inbound=True, include_smaller_windows=False, is_logprob=True, random_div=2000, unkify_most_common=False, replace_max_occurences=0, ordered_windows=True):
     self.text = text
     self.text_randomized = ''
     self.alpha = alpha
@@ -121,6 +121,8 @@ class NGramModel:
     self.sentence_inbound = sentence_inbound
     self.random_div = random_div
     self.tokens_pre_randomized_text = self.init_tokens_pre_randomized_text()
+    self.replace_max_occurences = replace_max_occurences
+    self.unkify_most_common = unkify_most_common
     self.tokens = self.init_tokens()
     self.word_probs = WordBank(self.tokens, alpha=self.alpha, n=self.n)
     self.is_logprob = is_logprob
@@ -129,6 +131,13 @@ class NGramModel:
   def init_tokens(self):
     if self.randomize_text is True:
       return list(filter((".").__ne__, self.tokens_pre_randomized_text))
+    elif self.unkify_most_common is True:
+      pre_unk = [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
+      unked = pre_unk
+      most_common = Counter(pre_unk).most_common()[:self.replace_max_occurences]
+      for i in most_common:
+        unked = ["<<!!UNK!!>>" if x==str(i[0]) else x for x in unked]
+      return unked
     return [token.casefold() for token in nltk.tokenize.word_tokenize(self.text) if token.isalnum()]
   
   def init_tokens_pre_randomized_text(self):
