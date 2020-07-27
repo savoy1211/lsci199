@@ -283,8 +283,10 @@ def survey_text(model, test, window_size):
   windows = get_windows(model, window_size)
   logps_words = np.array([logp_words(model, window) for window in windows])
   logps_word_sets = np.array([logp_word_set(model, window) for window in windows])
+  zero_equivalent = logp_word_set(model, window_size*["<<!!ZERO!!>>>"])
+  ratio_of_zeros_permuted_windows = logps_word_sets.tolist().count(zero_equivalent) / len(logps_word_sets)
   H_words = np.mean(logps_words)
   H_word_sets = np.mean(logps_word_sets)
   if model.is_logprob is True:
     H_words, H_word_sets = -H_words, -H_word_sets
-  return H_words, H_word_sets
+  return H_words, H_word_sets, ratio_of_zeros_permuted_windows
