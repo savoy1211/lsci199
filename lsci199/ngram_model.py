@@ -206,18 +206,19 @@ class NGramModel:
     return math.log(prob,2.0)
 
 class TestCorpus(NGramModel):
-  def __init__(self, text, sentence_inbound=True, randomize_text=False, randomize_sentence_inbound=False, include_smaller_windows=False, ordered_windows=True):
+  def __init__(self, text, sentence_inbound=True, randomize_text=False, randomize_sentence_inbound=False, include_smaller_windows=False, unkify_most_common=False, replace_max_occurences=0, ordered_windows=True):
     self.text = text
     self.text_randomized = ''
     self.randomize_text = randomize_text
     self.randomize_sentence_inbound = randomize_sentence_inbound
     self.tokens_pre_randomized_text = self.init_tokens_pre_randomized_text()
+    self.unkify_most_common = unkify_most_common
+    self.replace_max_occurences = replace_max_occurences    
     self.tokens = self.init_tokens()
     self.sentence_inbound = sentence_inbound
     self.include_smaller_windows = include_smaller_windows
     self.ordered_windows = ordered_windows
-    
-  
+
 
 def logp_words(model, tokens):
     """Get conditional plog of words using ngram model"""
