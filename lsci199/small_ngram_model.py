@@ -25,6 +25,7 @@ def test_left_truncate():
     assert left_truncate("ab", 10) == tuple("ab")    
 
 def right_truncate(xs, n):
+    assert n >= 0
     """ Return a tuple with the first n elements of xs """
     return tuple(xs[:n])
 
@@ -49,20 +50,20 @@ def test_tokens_in_context():
     assert list(tokens_in_context("")) == []
 
 class NgramModel:
-    def __init__(self, text, n=3, alpha=1, include_unk_in_vocab=True):
+    def __init__(self, tokens, n=3, alpha=1, include_unk_in_vocab=True):
         assert n > 0
         assert alpha >= 0
         self.n = n
         self.alpha = alpha
         
         self.vocab = set()
-        for token in text:
+        for token in tokens:
             self.vocab.add(token)
         if include_unk_in_vocab:
             self.vocab.add(UNK)
 
         self.freq = Counter()
-        for ngram in ngrams(text, n):
+        for ngram in ngrams(tokens, n):
             self.freq[ngram] += 1
             for i in range(n):
                 sub_ngram = right_truncate(ngram, i)
@@ -94,7 +95,6 @@ def test_mle_ngram_model():
     assert round(math.exp(model.window_logprob("one two".split())), 5) == round(2/5, 5)
     # assert total probability for all possible windows is 1
     assert sum(math.exp(model.window_logprob([w1, w2])) for w1 in model.vocab for w2 in model.vocab) == 1
-    
     
     model = NgramModel("this is a test a test".split(), n=2, alpha=0, include_unk_in_vocab=False)
     # p(a test) = p(a)p(test|a) = 2/5 * 1 = 2/5
