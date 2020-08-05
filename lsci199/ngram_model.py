@@ -67,11 +67,11 @@ class NGramConditionalProbs:
     self.index = index
     self.count = count + alpha
     self.count_pre_alpha = count
-    self.vocabulary = vocabulary
     self.total_count = 0
     self.alpha = alpha
     self.prob = 0
     self.dict_wordbank = {}
+    self.vocabulary = vocabulary
     self.unigram_count = 0
     
   def init_prob(self):
@@ -85,10 +85,14 @@ class NGramConditionalProbs:
       ngram_count = 1
       if self.unigram_count == 0:
         self.unigram_count = self.get_unigram_counts()
-      self.total_count = self.unigram_count + (self.vocabulary * self.alpha)
+      self.total_count = self.unigram_count + (self.get_unigram_counts() * self.alpha)
     else:
       count = self.dict_wordbank[index][prefix_gram].count_pre_alpha
-      self.total_count = count + (self.vocabulary * self.alpha)
+      self.total_count = count + (self.get_unigram_counts() * self.alpha)
+
+  def get_unigram_vocabulary(self):
+    w = self.dict_wordbank
+    return len(w.items())
 
   def get_unigram_counts(self):
     w = self.dict_wordbank
