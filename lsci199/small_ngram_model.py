@@ -1,5 +1,6 @@
 import math
 from collections import Counter
+from modulate_text import *
 
 INF = float('inf')
 UNK = "!!!UNK!!!"
