@@ -44,7 +44,8 @@ class WordBank:
       prob_list = self.dict_wordbank[tuple(index)]
       return prob_list[tuple(tokens)].prob
     except Exception:
-      return self.alpha / (self.dict_sizes[len(tokens)]+self.dict_vocabularies[len(tokens)]*self.alpha)
+      return self.alpha / (self.dict_sizes[len(tokens)]+len(self.dict_wordbank)*self.alpha)
+      # return 0
 
   def get_dict_sizes(self):
     keys = [i+1 for i in range(self.n)]
@@ -173,17 +174,21 @@ class NGramModel:
   def total_prob(self, tokens):
     total_prob = 0
     w = self.word_probs
-    total_prob = w.get_prob(tokens[:1])
-    if self.n > len(tokens):
-      for i in range(1, len(tokens)):
-        total_prob *= w.get_prob(tokens[:i+1]) / w.get_prob(tokens[:i])
-    elif self.n <= len(tokens):
-      for i in range(1,self.n-1):
-        total_prob *= w.get_prob(tokens[:i+1]) / w.get_prob(tokens[:i])
-        print(tokens[:i+1],"/",tokens[:i])
-      for i in range(len(tokens) - self.n+1):
-        total_prob *= w.get_prob(tokens[i:i+self.n]) / w.get_prob(tokens[i:i+self.n-1])
-        print(tokens[i:i+self.n],'/',tokens[i:i+self.n-1])
+    try:
+      total_prob = w.get_prob(tokens[:1])
+      if self.n > len(tokens):
+        for i in range(1, len(tokens)):
+          total_prob *= w.get_prob(tokens[:i+1]) / w.get_prob(tokens[:i])
+      elif self.n <= len(tokens):
+        for i in range(1,self.n-1):
+          total_prob *= w.get_prob(tokens[:i+1]) / w.get_prob(tokens[:i])
+          print(tokens[:i+1],"/",tokens[:i])
+        for i in range(len(tokens) - self.n+1):
+          total_prob *= w.get_prob(tokens[i:i+self.n]) / w.get_prob(tokens[i:i+self.n-1])
+          print(tokens[i:i+self.n],'/',tokens[i:i+self.n-1])
+    except ZeroDivisionError:
+      w = self.word_probs
+      return w.alpha / (w.dict_sizes[len(tokens)]+len(w.dict_wordbank)*w.alpha)
     return total_prob
 
   def total_logprob(self, tokens):
@@ -201,6 +206,8 @@ class NGramModel:
         total_prob += self.logprob(w.get_prob(tokens[i:i+self.n])) - self.logprob(w.get_prob(tokens[i:i+self.n-1]))
         # print(tokens[i:i+self.n],'-',tokens[i:i+self.n-1])
     if math.isnan(total_prob):
+      w = self.word_probs
+      return w.alpha / (w.dict_sizes[len(tokens)]+len(w.dict_wordbank)*w.alpha)
       return -float("inf")
     return total_prob
 

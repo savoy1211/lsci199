@@ -6,7 +6,7 @@ import time
 def each_text(training_text, training_text_names, testing_text, testing_text_names, n, alpha=0):
 	for i in range(len(training_text)):
 		start = time.time()
-		model = NGramModel(training_text[0], alpha=alpha, n=n)
+		model = NGramModel(training_text[0], alpha=alpha, n=n, unkify_most_common=True, replace_max_occurences=5)
 		test = TestCorpus(testing_text[0])
 		h_words, h_wordset, zeros_permutations = [], [], []
 		for j in range(1,6):
