@@ -1,5 +1,6 @@
 from modulate_text import *
 from small_ngram_model import *
+from load_wiki_txt import *
 import numpy as np
 import pandas as pd
 import scipy.special
@@ -23,8 +24,12 @@ class TestModel:
 
     d = { 'h_words': h_words, 'h_wordset': h_wordset, 'zeros_permutations': zeros_permutations}
     df = pd.DataFrame(data=d, dtype=np.float64)
-    pd.DataFrame(df).to_csv(str(self.trained_model.n)+"gram_ordered_inbound_alpha"+str(self.trained_model.alpha)+"_1to5_90_10")
-    print("Done! Created "+str(self.trained_model.n)+"gram_ordered_inbound_alpha"+str(self.trained_model.alpha)+"_1to5_90_10")
+    if self.test_state == "ordered":
+      pd.DataFrame(df).to_csv(str(self.trained_model.n)+"gram_ordered_inbound_alpha"+str(self.trained_model.alpha)+"_1to5_90_10_TURKISH")
+      print("Done! Created "+str(self.trained_model.n)+"gram_ordered_inbound_alpha"+str(self.trained_model.alpha)+"_1to5_90_10_TURKISH")
+    else:
+      pd.DataFrame(df).to_csv(str(self.trained_model.n)+"gram_random_inbound_alpha"+str(self.trained_model.alpha)+"_1to5_90_10_TURKISH")
+      print("Done! Created "+str(self.trained_model.n)+"gram_random_inbound_alpha"+str(self.trained_model.alpha)+"_1to5_90_10_TURKISH")
     end = time.time()
     print(end-start)
 
