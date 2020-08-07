@@ -1,6 +1,6 @@
 import nltk
 from random import shuffle
-from download_local_gutenberg_texts import *
+# from download_local_gutenberg_texts import *
 
 class ModulateText:
     def __init__(self, text, randomize_within_sentence=False, randomize_across_sentence=False):
