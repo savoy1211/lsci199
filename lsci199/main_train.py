@@ -2,12 +2,12 @@ from lm_results import *
 import pickle as p
 
 # Get Basline Results Ordered Inbound
-test = ModulateText(english_full)
+test = ModulateText(chinese_full, language='chinese by character')
 print("Test text created!")
 model = NgramModel(test.tokens, alpha=0, n=3)
 print("LM setup complete!")
-t = LMResultsBaseline(model, test, "n3_a0_oi_ENGLISH_full")
-file = open("LM_n3_a0_oi_ENGLISH_full", "wb")
+t = LMResultsBaseline(model, test, "n3_a0_oi_CHINESE_full")
+file = open("LM_n3_a0_oi_CHINESE_full", "wb")
 p.dump(t, file)
 print("LM created!")
 
