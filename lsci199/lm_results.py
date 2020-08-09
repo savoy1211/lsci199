@@ -8,17 +8,21 @@ import itertools
 import time
 
 class LMResults:
-  def __init__(self, trained_model, test_text, output_file):
+  def __init__(self, trained_model, test_text):
     assert trained_model.alpha > 0
     assert len(output_file) > 0
     
     self.test_state = test_text.state
     self.trained_model = trained_model
     self.test_text = test_text
+    # self.get_results(output_file)
+
+
+  def get_results(self, output_file):
     start = time.time()
     h_words, h_wordset = [], []
     for i in range(1,6):
-      h_words_current, h_wordset_current = self.survey_text(trained_model, test_text, i)
+      h_words_current, h_wordset_current = self.survey_text(self.trained_model, self.test_text, i)
       print("h_words",h_words_current, "h_wordset", h_wordset_current)
       h_words.append(h_words_current)
       h_wordset.append(h_wordset_current)
@@ -27,7 +31,7 @@ class LMResults:
     df = pd.DataFrame(data=d, dtype=np.float64)
     if self.test_state == "ordered":
       pd.DataFrame(df).to_csv(output_file)
-      print("Done! Created "+output_file)
+      print("Done! Created "+soutput_file)
     else:
       pd.DataFrame(df).to_csv(output_file)
       print("Done! Created "+output_file)
@@ -52,7 +56,9 @@ class LMResults:
     windows = []
     sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
     sentences = sent_detector.tokenize(test.text.strip(), realign_boundaries=False)
-    for sentence in sentences:    
+    # sentences = sent_detector.tokenize(test.text.strip())
+    # sentences = sent_detector.sentences_from_text(test.text, realign_boundaries=False)
+    for sentence in sentences:
       sentence = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
       window = []
       append_number, sentence_trunc = 0, sentence
@@ -67,8 +73,9 @@ class LMResults:
   
   def get_windows_sentence_outbound(self, test, window_size):
     # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
+    print("OUTBOUND :)")
     windows, window = [], []
-    t = test.random_tokens
+    t = test.random_tokens if test.state == "random across sentence" else test.tokens
     append_number, sentence_trunc = 0, t
     num_windows = lambda tokens, window_size: 1 if tokens < window_size else tokens-window_size+1
     while append_number != num_windows(len(t), window_size):
@@ -80,10 +87,10 @@ class LMResults:
     return windows
   
   def get_windows(self, test, window_size):
-    if test.state != "random across sentence":
-      windows = self.get_windows_sentence_inbound(test, window_size)
-    else:
+    if test.state == "random across sentence" or test.state == "ordered across sentence":
       windows = self.get_windows_sentence_outbound(test, window_size)
+    else:
+      windows = self.get_windows_sentence_inbound(test, window_size)
     return windows
   
   def survey_text(self, model, test, window_size):
