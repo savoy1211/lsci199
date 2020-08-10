@@ -6,6 +6,7 @@ import pandas as pd
 import scipy.special
 import itertools
 import time
+import re
 
 class LMResults:
   def __init__(self, trained_model, test_text):
@@ -54,12 +55,9 @@ class LMResults:
   def get_windows_sentence_inbound(self, test, window_size):
     # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
     windows = []
-    sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
-    sentences = sent_detector.tokenize(test.text.strip(), realign_boundaries=False)
-    # sentences = sent_detector.tokenize(test.text.strip())
-    # sentences = sent_detector.sentences_from_text(test.text, realign_boundaries=False)
+    sentences = self.get_sents(test)
     for sentence in sentences:
-      sentence = [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
+      sentence = self.get_sent_tokens(test, sentence)
       window = []
       append_number, sentence_trunc = 0, sentence
       num_windows = lambda tokens, window_size: 1 if tokens < window_size else tokens-window_size+1
@@ -70,7 +68,25 @@ class LMResults:
         append_number += 1
         sentence_trunc = sentence_trunc[1:]
     return windows
-  
+
+  def get_sents(self, test):
+    if test.language == "english":
+      sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+      return sent_detector.tokenize(test.text.strip(), realign_boundaries=False)
+    elif test.language == "chinese":
+      return list(self.chinese_sents(test.text))
+
+  def get_sent_tokens(self, test, sentence):
+    if test.language == "english":
+      return [token.casefold() for token in nltk.tokenize.word_tokenize(sentence) if token.isalnum()]
+    elif test.language == "chinese":
+      sentence = [token for token in jieba.cut(sentence, cut_all=True)]
+      return [str(token) for token in sentence]
+
+  def chinese_sents(self, paragraph):
+      for sent in re.findall(u'[^!?。\.\!\?]+[!?。\.\!\?]?', paragraph, flags=re.U):
+          yield sent
+
   def get_windows_sentence_outbound(self, test, window_size):
     # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
     print("OUTBOUND :)")

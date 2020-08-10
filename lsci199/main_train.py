@@ -17,15 +17,16 @@ import pickle as p
 # nltk.download('punkt')
 
 # Get Basline Results Ordered Inbound
-test = ModulateText(english_full, state="ordered")
+test = ModulateText(chinese_full, language="chinese")
 print("Test text created!")
 model = NgramModel(test.tokens, alpha=0.1, n=3)
 print("LM setup complete!")
-t = LMResults(model, test)
-# t.get_results("LM_n3_a0.1_oi_(ENGLISH)_full.txt")
-file = open("LM_n3_a0.1_oi_(ENGLISH)_full", "wb")
+t = LMResults(model, test, output_file="LM_n3_a0.1_oi_(CHINESE)_full.txt")
+t.get_results("LM_n3_a0.1_oi_(CHINESE)_full.txt")
+file = open("LM_n3_a0_oi_(CHINESE)_full", "wb")
 p.dump(t, file)
 print("LM created!")
+
 
 # file = open("LM_3gram_alpha0_(moby_dick)_ordered_FULL", "rb")
 # p.load(file)
