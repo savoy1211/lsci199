@@ -6,7 +6,11 @@ import pandas as pd
 import scipy.special
 import itertools
 import time
+<<<<<<< HEAD
+import slider
+=======
 import re
+>>>>>>> 7a8d648942057ae0148d461b8ae9afc672e780a0
 
 class LMResults:
   def __init__(self, trained_model, test_text):
@@ -88,19 +92,21 @@ class LMResults:
           yield sent
 
   def get_windows_sentence_outbound(self, test, window_size):
-    # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
-    print("OUTBOUND :)")
-    windows, window = [], []
     t = test.random_tokens if test.state == "random across sentence" else test.tokens
-    append_number, sentence_trunc = 0, t
-    num_windows = lambda tokens, window_size: 1 if tokens < window_size else tokens-window_size+1
-    while append_number != num_windows(len(t), window_size):
-      window = sentence_trunc[:window_size]
-      if len(window) > 0 and len(window) == window_size:
-        windows.append(window)
-      append_number += 1
-      sentence_trunc = sentence_trunc[1:]
-    return windows
+    return slider.sliding(t, window_size)
+    # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
+    #print("OUTBOUND :)")
+    #windows, window = [], []
+    #t = test.random_tokens if test.state == "random across sentence" else test.tokens
+    #append_number, sentence_trunc = 0, t
+    #num_windows = lambda tokens, window_size: 1 if tokens < window_size else tokens-window_size+1
+    #while append_number != num_windows(len(t), window_size):
+    #  window = sentence_trunc[:window_size]
+    #  if len(window) > 0 and len(window) == window_size:
+    #    windows.append(window)
+    #  append_number += 1
+    #  sentence_trunc = sentence_trunc[1:]
+    #return windowsipy
   
   def get_windows(self, test, window_size):
     if test.state == "random across sentence" or test.state == "ordered across sentence":
@@ -160,9 +166,8 @@ class LMResultsBaseline(LMResults):
   def survey_text(self, model, test, window_size):
     self.zero_prob_ratios = []
     # ... for a sliding window of contiguous words of size window_size, get H[words] and H[word set] ...
-    windows = self.get_windows(test, window_size)
-    logps_words = np.array([self.logp_words(window) for window in windows])
-    logps_word_sets = np.array([self.logp_word_set(window) for window in windows])
+    logps_words = np.array([self.logp_words(window) for window in self.get_windows(test, window_size)])
+    logps_word_sets = np.array([self.logp_word_set(window) for window in self.get_windows(test, window_size)])
     ratio_of_zeros_permuted_windows = np.mean(self.zero_prob_ratios)
     H_words = -np.mean(logps_words)
     H_word_sets = -np.mean(logps_word_sets)
